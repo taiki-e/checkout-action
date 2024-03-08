@@ -1,0 +1,60 @@
+name: CI
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - dev
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  tidy:
+    uses: taiki-e/github-actions/.github/workflows/tidy.yml@main
+
+  checkout-action:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: taiki-e/checkout-action@main
+      - uses: taiki-e/install-action@shellcheck
+      - uses: taiki-e/install-action@shfmt
+      - run: git ls-files
+      - run: ./tools/tidy.sh
+  # For comparison
+  actions-checkout:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: taiki-e/install-action@shellcheck
+      - uses: taiki-e/install-action@shfmt
+      - run: git ls-files
+      - run: ./tools/tidy.sh

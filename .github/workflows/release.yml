@@ -1,0 +1,29 @@
+name: Release
+
+permissions:
+  contents: read
+
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.*
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  create-release:
+    if: github.repository_owner == 'taiki-e'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: taiki-e/github-actions/checkout@main
+      - uses: taiki-e/create-gh-release-action@v1
+        with:
+          changelog: CHANGELOG.md
+          title: $version
+          branch: 'main|v[0-9]+'
+          token: ${{ secrets.GITHUB_TOKEN }}

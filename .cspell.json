@@ -1,0 +1,51 @@
+{
+  "version": "0.2",
+  "gitignoreRoot": ".",
+  "useGitignore": true,
+  "dictionaryDefinitions": [
+    {
+      "name": "organization-dictionary",
+      "path": "https://raw.githubusercontent.com/taiki-e/github-actions/HEAD/.github/.cspell/organization-dictionary.txt",
+      "addWords": true
+    },
+    {
+      "name": "project-dictionary",
+      "path": "./.github/.cspell/project-dictionary.txt",
+      "addWords": true
+    },
+    {
+      "name": "rust-dependencies",
+      "path": "./.github/.cspell/rust-dependencies.txt",
+      "addWords": true
+    }
+  ],
+  "dictionaries": [
+    "organization-dictionary",
+    "project-dictionary",
+    "rust-dependencies"
+  ],
+  "ignoreRegExpList": [
+    // Copyright notice
+    "Copyright .*",
+    // GHA actions/workflows
+    "uses: .+@",
+    // GHA context (repo name, owner name, etc.)
+    "github.\\w+ (=|!)= '.+'",
+    // GH username
+    "( |\\[)@[\\w_-]+",
+    // Git config username
+    "git config user.name .*",
+    // Username in todo comment
+    "(TODO|FIXME)\\([\\w_., -]+\\)",
+    // Cargo.toml authors
+    "authors *= *\\[.*\\]",
+    "\".* <[\\w_.+-]+@[\\w.-]+>\""
+  ],
+  "languageSettings": [
+    {
+      "languageId": ["*"],
+      "dictionaries": ["rust"]
+    }
+  ],
+  "ignorePaths": []
+}

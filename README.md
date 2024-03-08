@@ -12,7 +12,7 @@ GitHub Action for checking out a repository. (Simplified `actions/checkout` alte
 
 ## Usage
 
-This action currently provides a fairly limited subset of the features provided by `actions/checkout`.
+This action currently provides a minimal subset of the features provided by `actions/checkout`.
 
 The features supported as of v1.0.0 are purely based on my use cases within public repositories, but feel free to submit an issue if you see something missing in your use case. See [issues](https://github.com/taiki-e/checkout-action/issues) for known unsupported features.
 
@@ -20,7 +20,7 @@ The features supported as of v1.0.0 are purely based on my use cases within publ
 - uses: taiki-e/checkout-action@v1
 ```
 
-Almost equivalent to:
+Almost equivalent to (for public repositories):
 
 ```yaml
 - uses: actions/checkout@v4

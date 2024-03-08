@@ -14,5 +14,5 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/create-gh-release-action/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/taiki-e/create-gh-release-action/releases/tag/v1.0.0
+[Unreleased]: https://github.com/taiki-e/checkout-action/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/taiki-e/checkout-action/releases/tag/v1.0.0

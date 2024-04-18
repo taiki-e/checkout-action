@@ -41,6 +41,9 @@ apt_install() {
     fi
     retry _sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends "$@"
 }
+dnf_install() {
+    retry _sudo "${dnf}" install -y "$@"
+}
 apk_install() {
     if type -P sudo &>/dev/null; then
         sudo apk --no-cache add "$@"
@@ -50,14 +53,15 @@ apk_install() {
         apk --no-cache add "$@"
     fi
 }
-dnf_install() {
-    retry _sudo "${dnf}" install -y "$@"
+pacman_install() {
+    retry _sudo pacman -Sy --noconfirm "$@"
 }
 sys_install() {
     case "${base_distro}" in
         debian) apt_install "$@" ;;
-        alpine) apk_install "$@" ;;
         fedora) dnf_install "$@" ;;
+        alpine) apk_install "$@" ;;
+        arch) pacman_install "$@" ;;
     esac
 }
 
@@ -69,10 +73,11 @@ case "$(uname -s)" in
         host_os=linux
         if grep -q '^ID_LIKE=' /etc/os-release; then
             base_distro=$(grep '^ID_LIKE=' /etc/os-release | sed 's/^ID_LIKE=//')
-            case "${base_distro}" in
-                *debian*) base_distro=debian ;;
-                *alpine*) base_distro=alpine ;;
-                *fedora*) base_distro=fedora ;;
+            case " ${base_distro} " in
+                *' debian '*) base_distro=debian ;;
+                *' fedora '*) base_distro=fedora ;;
+                *' alpine '*) base_distro=alpine ;;
+                *' arch '*) base_distro=arch ;;
             esac
         else
             base_distro=$(grep '^ID=' /etc/os-release | sed 's/^ID=//')
@@ -104,7 +109,7 @@ if ! type -P git &>/dev/null; then
     case "${host_os}" in
         linux*)
             case "${base_distro}" in
-                debian | fedora | alpine)
+                debian | fedora | alpine | arch)
                     echo "::group::Install packages required for installation (git)"
                     case "${base_distro}" in
                         debian) sys_install ca-certificates git ;;
@@ -112,7 +117,7 @@ if ! type -P git &>/dev/null; then
                     esac
                     echo "::endgroup::"
                     ;;
-                *) warn "checkout-action requires git on non-Debian/Fedora/Alpine-based Linux" ;;
+                *) warn "checkout-action requires git on non-Debian/Fedora/Alpine/Arch-based Linux" ;;
             esac
             ;;
         macos) warn "checkout-action requires git on macOS" ;;

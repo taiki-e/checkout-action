@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Diagnostic improvements.
+
 ## [1.1.0] - 2024-04-19
 
 - Improve support for SUSE/Arch based containers/self-hosted runners.

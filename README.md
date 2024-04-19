@@ -7,6 +7,7 @@ GitHub Action for checking out a repository. (Simplified `actions/checkout` alte
 
 - [Usage](#usage)
 - [Why not actions/checkout?](#why-not-actionscheckout)
+- [Compatibility](#compatibility)
 - [Related Projects](#related-projects)
 - [License](#license)
 
@@ -33,6 +34,13 @@ Almost equivalent to (for public repositories):
 As of 2024-03-08, the latest version of `actions/checkout` that uses node20 [doesn't work on CentOS 7](https://github.com/actions/runner/issues/2906).
 
 Also, in `actions/*` actions, each update of the Node.js used increments the major version (it is the correct behavior for compatibility although), so workflows that use it require maintenance on a regular basis. (Unless you have fully automated dependency updates.)
+
+## Compatibility
+
+This action has been tested for GitHub-hosted runners (Ubuntu, macOS, Windows) and containers (Ubuntu, Debian, Alpine, Fedora, CentOS, Alma, openSUSE, Arch).
+To use this action in self-hosted runners or in containers, at least the following tools are required:
+
+- bash
 
 ## Related Projects
 

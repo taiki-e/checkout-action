@@ -53,6 +53,9 @@ apk_install() {
         apk --no-cache add "$@"
     fi
 }
+zypper_install() {
+    retry _sudo zypper install -y "$@"
+}
 pacman_install() {
     retry _sudo pacman -Sy --noconfirm "$@"
 }
@@ -61,6 +64,7 @@ sys_install() {
         debian) apt_install "$@" ;;
         fedora) dnf_install "$@" ;;
         alpine) apk_install "$@" ;;
+        suse) zypper_install "$@" ;;
         arch) pacman_install "$@" ;;
     esac
 }
@@ -73,11 +77,12 @@ case "$(uname -s)" in
         host_os=linux
         if grep -q '^ID_LIKE=' /etc/os-release; then
             base_distro=$(grep '^ID_LIKE=' /etc/os-release | sed 's/^ID_LIKE=//')
-            case " ${base_distro} " in
-                *' debian '*) base_distro=debian ;;
-                *' fedora '*) base_distro=fedora ;;
-                *' alpine '*) base_distro=alpine ;;
-                *' arch '*) base_distro=arch ;;
+            case "${base_distro}" in
+                *debian*) base_distro=debian ;;
+                *fedora*) base_distro=fedora ;;
+                *alpine*) base_distro=alpine ;;
+                *suse*) base_distro=suse ;;
+                *arch*) base_distro=arch ;;
             esac
         else
             base_distro=$(grep '^ID=' /etc/os-release | sed 's/^ID=//')
@@ -109,7 +114,7 @@ if ! type -P git &>/dev/null; then
     case "${host_os}" in
         linux*)
             case "${base_distro}" in
-                debian | fedora | alpine | arch)
+                debian | fedora | alpine | suse | arch)
                     echo "::group::Install packages required for installation (git)"
                     case "${base_distro}" in
                         debian) sys_install ca-certificates git ;;
@@ -117,7 +122,7 @@ if ! type -P git &>/dev/null; then
                     esac
                     echo "::endgroup::"
                     ;;
-                *) warn "checkout-action requires git on non-Debian/Fedora/Alpine/Arch-based Linux" ;;
+                *) warn "checkout-action requires git on non-Debian/Fedora/Alpine/SUSE/Arch-based Linux" ;;
             esac
             ;;
         macos) warn "checkout-action requires git on macOS" ;;

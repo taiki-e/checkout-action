@@ -58,3 +58,35 @@ jobs:
       - uses: taiki-e/install-action@shfmt
       - run: git ls-files
       - run: ./tools/tidy.sh
+
+  test-container:
+    strategy:
+      fail-fast: false
+      matrix:
+        container:
+          - ubuntu:18.04 # glibc 2.27
+          - ubuntu:20.04 # glibc 2.31
+          - ubuntu:22.04 # glibc 2.35
+          - debian:10-slim # glibc 2.28
+          - debian:11-slim # glibc 2.31
+          - debian:12-slim # glibc 2.36
+          - fedora:latest # glibc 2.38 (as of fedora 39)
+          - almalinux:8 # glibc 2.28
+          - almalinux:8-minimal # glibc 2.28
+          - almalinux:9 # glibc 2.34
+          - almalinux:9-minimal # glibc 2.34
+          - centos:7 # glibc 2.17
+          - opensuse/leap:latest # glibc 2.31 (as of leap 15.5)
+          - opensuse/tumbleweed:latest # glibc 2.39 (as of 2024-04-18)
+          - archlinux:latest # glibc 2.38 (as of 2024-04-18)
+          - alpine:latest # musl 1.2.4 (as of alpine 3.19)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    container: ${{ matrix.container }}
+    steps:
+      - name: Install requirements (alpine)
+        run: apk --no-cache add bash
+        shell: sh
+        if: startsWith(matrix.container, 'alpine')
+      - uses: taiki-e/checkout-action@main
+      - run: git ls-files

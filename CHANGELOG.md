@@ -10,7 +10,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
-- Improve support for Arch Linux based containers/self-hosted runners.
+- Improve support for SUSE/Arch based containers/self-hosted runners.
 
 ## [1.0.0] - 2024-03-08
 

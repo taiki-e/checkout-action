@@ -44,6 +44,12 @@ apt_install() {
 dnf_install() {
     retry _sudo "${dnf}" install -y "$@"
 }
+zypper_install() {
+    retry _sudo zypper install -y "$@"
+}
+pacman_install() {
+    retry _sudo pacman -Sy --noconfirm "$@"
+}
 apk_install() {
     if type -P sudo &>/dev/null; then
         sudo apk --no-cache add "$@"
@@ -53,19 +59,13 @@ apk_install() {
         apk --no-cache add "$@"
     fi
 }
-zypper_install() {
-    retry _sudo zypper install -y "$@"
-}
-pacman_install() {
-    retry _sudo pacman -Sy --noconfirm "$@"
-}
 sys_install() {
     case "${base_distro}" in
         debian) apt_install "$@" ;;
         fedora) dnf_install "$@" ;;
-        alpine) apk_install "$@" ;;
         suse) zypper_install "$@" ;;
         arch) pacman_install "$@" ;;
+        alpine) apk_install "$@" ;;
     esac
 }
 
@@ -76,16 +76,16 @@ case "$(uname -s)" in
     Linux)
         host_os=linux
         if grep -q '^ID_LIKE=' /etc/os-release; then
-            base_distro=$(grep '^ID_LIKE=' /etc/os-release | sed 's/^ID_LIKE=//')
+            base_distro=$(grep '^ID_LIKE=' /etc/os-release | cut -d= -f2)
             case "${base_distro}" in
                 *debian*) base_distro=debian ;;
                 *fedora*) base_distro=fedora ;;
-                *alpine*) base_distro=alpine ;;
                 *suse*) base_distro=suse ;;
                 *arch*) base_distro=arch ;;
+                *alpine*) base_distro=alpine ;;
             esac
         else
-            base_distro=$(grep '^ID=' /etc/os-release | sed 's/^ID=//')
+            base_distro=$(grep '^ID=' /etc/os-release | cut -d= -f2)
         fi
         case "${base_distro}" in
             fedora)
@@ -114,7 +114,7 @@ if ! type -P git &>/dev/null; then
     case "${host_os}" in
         linux*)
             case "${base_distro}" in
-                debian | fedora | alpine | suse | arch)
+                debian | fedora | suse | arch | alpine)
                     echo "::group::Install packages required for checkout (git)"
                     case "${base_distro}" in
                         debian) sys_install ca-certificates git ;;
@@ -122,7 +122,7 @@ if ! type -P git &>/dev/null; then
                     esac
                     echo "::endgroup::"
                     ;;
-                *) warn "checkout-action requires git on non-Debian/Fedora/Alpine/SUSE/Arch-based Linux" ;;
+                *) warn "checkout-action requires git on non-Debian/Fedora/SUSE/Arch/Alpine-based Linux" ;;
             esac
             ;;
         macos) warn "checkout-action requires git on macOS" ;;

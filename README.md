@@ -37,7 +37,7 @@ Also, in `actions/*` actions, each update of the Node.js used increments the maj
 
 ## Compatibility
 
-This action has been tested for GitHub-hosted runners (Ubuntu, macOS, Windows) and containers (Ubuntu, Debian, Alpine, Fedora, CentOS, Alma, openSUSE, Arch).
+This action has been tested for GitHub-hosted runners (Ubuntu, macOS, Windows) and containers (Ubuntu, Debian, Fedora, CentOS, Alma, openSUSE, Arch, Alpine).
 To use this action in self-hosted runners or in containers, at least the following tools are required:
 
 - bash

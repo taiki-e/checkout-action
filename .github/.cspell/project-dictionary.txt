@@ -4,4 +4,3 @@ distro
 doas
 endgroup
 microdnf
-shfmt

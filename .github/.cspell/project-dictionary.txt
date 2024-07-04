@@ -3,4 +3,7 @@ archlinux
 distro
 doas
 endgroup
+fastestmirror
 microdnf
+mirrorlist
+pluginconf

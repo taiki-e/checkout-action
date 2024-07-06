@@ -38,9 +38,13 @@ Also, in `actions/*` actions, each update of the Node.js used increments the maj
 ## Compatibility
 
 This action has been tested for GitHub-hosted runners (Ubuntu, macOS, Windows) and containers (Ubuntu, Debian, Fedora, CentOS, Alma, openSUSE, Arch, Alpine).
-To use this action in self-hosted runners or in containers, at least the following tools are required:
+
+On Linux, if any required tools are missing, this action will attempt to install them from distro's package manager, so no pre-setup is usually required (except for CentOS, which was already EoL and needs to use vault repos -- see "Install requirements (centos)" in our CI config for example of setup).
+
+On other platforms, at least the following tools are required:
 
 - bash
+- git
 
 ## Related Projects
 

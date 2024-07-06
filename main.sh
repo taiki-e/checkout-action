@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0 OR MIT
-set -eEuo pipefail
+set -CeEuo pipefail
 IFS=$'\n\t'
 
 g() {
-    local cmd="$1"
-    shift
     IFS=' '
-    echo "::group::${cmd} $*"
+    local cmd="$*"
     IFS=$'\n\t'
+    printf '::group::%s\n' "${cmd#retry }"
+    cmd="$1"
+    shift
     "${cmd}" "$@"
+    printf '::endgroup::\n'
 }
 retry() {
     for i in {1..10}; do
@@ -21,8 +23,12 @@ retry() {
     done
     "$@"
 }
+bail() {
+    printf '::error::%s\n' "$*"
+    exit 1
+}
 warn() {
-    echo "::warning::$*"
+    printf '::warning::%s\n' "$*"
 }
 _sudo() {
     if type -P sudo &>/dev/null; then
@@ -50,6 +56,7 @@ zypper_install() {
 pacman_install() {
     retry _sudo pacman -Sy --noconfirm "$@"
 }
+# NB: sync with action.yml
 apk_install() {
     if type -P sudo &>/dev/null; then
         sudo apk --no-cache add "$@"
@@ -71,21 +78,25 @@ sys_install() {
 
 wd=$(pwd)
 
-base_distro=""
+base_distro=''
 case "$(uname -s)" in
     Linux)
         host_os=linux
-        if grep -q '^ID_LIKE=' /etc/os-release; then
-            base_distro=$(grep '^ID_LIKE=' /etc/os-release | cut -d= -f2)
-            case "${base_distro}" in
-                *debian*) base_distro=debian ;;
-                *fedora*) base_distro=fedora ;;
-                *suse*) base_distro=suse ;;
-                *arch*) base_distro=arch ;;
-                *alpine*) base_distro=alpine ;;
-            esac
-        else
-            base_distro=$(grep '^ID=' /etc/os-release | cut -d= -f2)
+        if [[ -e /etc/os-release ]]; then
+            if grep -Eq '^ID_LIKE=' /etc/os-release; then
+                base_distro=$(grep -E '^ID_LIKE=' /etc/os-release | cut -d= -f2)
+                case "${base_distro}" in
+                    *debian*) base_distro=debian ;;
+                    *fedora*) base_distro=fedora ;;
+                    *suse*) base_distro=suse ;;
+                    *arch*) base_distro=arch ;;
+                    *alpine*) base_distro=alpine ;;
+                esac
+            else
+                base_distro=$(grep -E '^ID=' /etc/os-release | cut -d= -f2)
+            fi
+        elif [[ -e /etc/redhat-release ]]; then
+            base_distro=fedora
         fi
         case "${base_distro}" in
             fedora)
@@ -115,12 +126,12 @@ if ! type -P git &>/dev/null; then
         linux*)
             case "${base_distro}" in
                 debian | fedora | suse | arch | alpine)
-                    echo "::group::Install packages required for checkout (git)"
+                    printf '::group::Install packages required for checkout (git)\n'
                     case "${base_distro}" in
                         debian) sys_install ca-certificates git ;;
                         *) sys_install git ;;
                     esac
-                    echo "::endgroup::"
+                    printf '::endgroup::\n'
                     ;;
                 *) warn "checkout-action requires git on non-Debian/Fedora/SUSE/Arch/Alpine-based Linux" ;;
             esac

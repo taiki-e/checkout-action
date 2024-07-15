@@ -39,12 +39,14 @@ Also, in `actions/*` actions, each update of the Node.js used increments the maj
 
 This action has been tested for GitHub-hosted runners (Ubuntu, macOS, Windows) and containers (Ubuntu, Debian, Fedora, CentOS, Alma, openSUSE, Arch, Alpine).
 
-On Linux, if any required tools are missing, this action will attempt to install them from distro's package manager, so no pre-setup is usually required (except for CentOS or Debian 9 or older, which was already EoL and needs to use vault/archive repos -- see "Install requirements" in [our CI config](https://github.com/taiki-e/checkout-action/blob/HEAD/.github/workflows/ci.yml) for example of setup).
+On Linux, if any required tools are missing, this action will attempt to install them from distro's package manager, so no pre-setup is usually required (except for CentOS or Debian 9 (or older) or very old distro described below, which was already EoL and needs to use vault/archive repos -- see "Install requirements" in [our CI config](https://github.com/taiki-e/checkout-action/blob/HEAD/.github/workflows/ci.yml) for example of setup).
 
 On other platforms, at least the following tools are required:
 
-- bash
-- git
+- bash 3.2+
+- git 1.8+
+
+Known environments affected by the above version requirements are CentOS 6 (EoL on 2020-11) using git 1.7 (see "Install requirements" in [our CI config](https://github.com/taiki-e/checkout-action/blob/HEAD/.github/workflows/ci.yml) for example of workaround).
 
 ## Related Projects
 

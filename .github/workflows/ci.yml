@@ -30,6 +30,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Test all non-deprecated images listed in https://github.com/actions/runner-images#available-images,
+          # and also msys64 & cygwin, which have different behavior then default https://github.com/taiki-e/install-action/pull/518#issuecomment-2160736760.
           - os: ubuntu-20.04
           - os: ubuntu-22.04
           - os: ubuntu-24.04
@@ -57,6 +59,7 @@ jobs:
           printf 'C:\tools\cygwin\bin\n' >>"${GITHUB_PATH}"
           printf 'C:\tools\cygwin\usr\bin\n' >>"${GITHUB_PATH}"
         if: matrix.bash == 'cygwin'
+      # TODO: use the current branch
       - uses: taiki-e/checkout-action@main
       - uses: taiki-e/install-action@shellcheck
       - uses: taiki-e/install-action@shfmt
@@ -138,5 +141,6 @@ jobs:
               https://vault.ius.io/el6/x86_64/packages/g/git18-1.8.5.5-4.ius.el6.x86_64.rpm
           fi
         if: startsWith(matrix.container, 'centos')
+      # TODO: use the current branch
       - uses: taiki-e/checkout-action@main
       - run: git ls-files

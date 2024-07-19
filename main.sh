@@ -76,6 +76,12 @@ sys_install() {
     esac
 }
 
+github_server_url="${INPUT_GITHUB_SERVER_URL:-"${GITHUB_SERVER_URL}"}"
+# repository="${INPUT_REPOSITORY:-"${GITHUB_REPOSITORY}"}"
+repository="${GITHUB_REPOSITORY}"
+set_safe_directory="${INPUT_SET_SAFE_DIRECTORY:-"true"}"
+fetch_depth="${INPUT_FETCH_DEPTH:-"1"}"
+
 wd=$(pwd)
 
 base_distro=''
@@ -144,22 +150,34 @@ fi
 
 g git version
 
-g git config --global --add safe.directory "${wd}"
+case "${set_safe_directory}" in
+    true) g git config --global --add safe.directory "${wd}" ;;
+    false) ;;
+    *) g git config --global --add safe.directory "${set_safe_directory}" ;;
+esac
 
 g git init
 
-g git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
+g git remote add origin "${github_server_url}/${repository}"
 
 g git config --local gc.auto 0
 
+fetch_args=(fetch --prune --no-recurse-submodules)
+checkout_args=(checkout --force)
 if [[ "${GITHUB_REF}" == "refs/heads/"* ]]; then
     branch="${GITHUB_REF#refs/heads/}"
     remote_ref="refs/remotes/origin/${branch}"
-    g retry git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin "+${GITHUB_SHA}:${remote_ref}"
-    g retry git checkout --force -B "${branch}" "${remote_ref}"
+    refs=("+${GITHUB_SHA}:${remote_ref}")
+    checkout_args+=(-B "${branch}" "${remote_ref}")
 else
-    g retry git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin "+${GITHUB_SHA}:${GITHUB_REF}"
-    g retry git checkout --force "${GITHUB_REF}"
+    refs=("+${GITHUB_SHA}:${GITHUB_REF}")
+    checkout_args+=("${GITHUB_REF}")
 fi
+case "${fetch_depth}" in
+    0) refs=('+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*') ;;
+    *) fetch_args+=(--no-tags --depth="${fetch_depth}") ;;
+esac
+g retry git "${fetch_args[@]}" origin "${refs[@]}"
+g retry git "${checkout_args[@]}"
 
 g git config --global --add safe.directory "${wd}"

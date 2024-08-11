@@ -59,11 +59,11 @@ pacman_install() {
 # NB: sync with action.yml
 apk_install() {
     if type -P sudo &>/dev/null; then
-        sudo apk --no-cache add "$@"
+        retry sudo apk --no-cache add "$@"
     elif type -P doas &>/dev/null; then
-        doas apk --no-cache add "$@"
+        retry doas apk --no-cache add "$@"
     else
-        apk --no-cache add "$@"
+        retry apk --no-cache add "$@"
     fi
 }
 # NB: sync with action.yml
@@ -76,7 +76,7 @@ opkg_install() {
     if [[ -z "${opkg_updated:-}" ]]; then
         opkg_update
     fi
-    _sudo opkg install "$@"
+    retry _sudo opkg install "$@"
 }
 sys_install() {
     case "${base_distro}" in

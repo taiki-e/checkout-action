@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Improve support for OpenWrt based containers/self-hosted runners.
+
 ## [1.2.0] - 2024-07-06
 
 - Fix "/etc/os-release: No such file or directory" error on CentOS 6.

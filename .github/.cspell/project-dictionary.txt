@@ -5,4 +5,6 @@ doas
 fastestmirror
 microdnf
 mirrorlist
+opkg
 pluginconf
+rootfs

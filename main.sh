@@ -66,6 +66,18 @@ apk_install() {
         apk --no-cache add "$@"
     fi
 }
+# NB: sync with action.yml
+opkg_update() {
+    _sudo mkdir -p /var/lock
+    retry _sudo opkg update
+    opkg_updated=1
+}
+opkg_install() {
+    if [[ -z "${opkg_updated:-}" ]]; then
+        opkg_update
+    fi
+    _sudo opkg install "$@"
+}
 sys_install() {
     case "${base_distro}" in
         debian) apt_install "$@" ;;
@@ -73,6 +85,7 @@ sys_install() {
         suse) zypper_install "$@" ;;
         arch) pacman_install "$@" ;;
         alpine) apk_install "$@" ;;
+        openwrt) opkg_install "$@" ;;
     esac
 }
 
@@ -91,12 +104,18 @@ case "$(uname -s)" in
                     *suse*) base_distro=suse ;;
                     *arch*) base_distro=arch ;;
                     *alpine*) base_distro=alpine ;;
+                    *openwrt*) base_distro=openwrt ;;
                 esac
             else
                 base_distro=$(grep -E '^ID=' /etc/os-release | cut -d= -f2)
             fi
+            base_distro="${base_distro//\"/}"
         elif [[ -e /etc/redhat-release ]]; then
+            # /etc/os-release is available on RHEL/CentOS 7+
             base_distro=fedora
+        elif [[ -e /etc/debian_version ]]; then
+            # /etc/os-release is available on Debian 7+
+            base_distro=debian
         fi
         case "${base_distro}" in
             fedora)
@@ -125,15 +144,16 @@ if ! type -P git &>/dev/null; then
     case "${host_os}" in
         linux*)
             case "${base_distro}" in
-                debian | fedora | suse | arch | alpine)
+                debian | fedora | suse | arch | alpine | openwrt)
                     printf '::group::Install packages required for checkout (git)\n'
                     case "${base_distro}" in
                         debian) sys_install ca-certificates git ;;
+                        openwrt) sys_install git git-http ;;
                         *) sys_install git ;;
                     esac
                     printf '::endgroup::\n'
                     ;;
-                *) warn "checkout-action requires git on non-Debian/Fedora/SUSE/Arch/Alpine-based Linux" ;;
+                *) warn "checkout-action requires git on non-Debian/Fedora/SUSE/Arch/Alpine/OpenWrt-based Linux" ;;
             esac
             ;;
         macos) warn "checkout-action requires git on macOS" ;;

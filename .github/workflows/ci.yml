@@ -15,7 +15,7 @@ on:
 
 defaults:
   run:
-    shell: bash
+    shell: bash --noprofile --norc -CeEuxo pipefail {0}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -118,7 +118,6 @@ jobs:
     steps:
       - name: Install requirements (old debian)
         run: |
-          set -CeEuxo pipefail
           # In Debian, the old repositories is removed from the main mirrors some time after EoL.
           sed -i /etc/apt/sources.list -e 's/deb.debian.org/archive.debian.org/g' \
             -e 's|security.debian.org|archive.debian.org/|g' \
@@ -126,7 +125,6 @@ jobs:
         if: startsWith(matrix.container, 'debian:9')
       - name: Install requirements (centos)
         run: |
-          set -CeEuxo pipefail
           # In CentOS, the old repositories is removed from the main mirrors just after EoL.
           # https://github.com/rust-lang/rust/pull/126352
           sed -i /etc/yum.repos.d/*.repo -e 's!^mirrorlist!#mirrorlist!' \

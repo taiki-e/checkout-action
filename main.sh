@@ -8,9 +8,7 @@ g() {
     local cmd="$*"
     IFS=$'\n\t'
     printf '::group::%s\n' "${cmd#retry }"
-    cmd="$1"
-    shift
-    "${cmd}" "$@"
+    "$@"
     printf '::endgroup::\n'
 }
 retry() {
@@ -31,7 +29,7 @@ warn() {
     printf '::warning::%s\n' "$*"
 }
 _sudo() {
-    if type -P sudo &>/dev/null; then
+    if type -P sudo >/dev/null; then
         sudo "$@"
     else
         "$@"
@@ -58,9 +56,9 @@ pacman_install() {
 }
 # NB: sync with action.yml
 apk_install() {
-    if type -P sudo &>/dev/null; then
+    if type -P sudo >/dev/null; then
         retry sudo apk --no-cache add "$@"
-    elif type -P doas &>/dev/null; then
+    elif type -P doas >/dev/null; then
         retry doas apk --no-cache add "$@"
     else
         retry apk --no-cache add "$@"
@@ -68,7 +66,7 @@ apk_install() {
 }
 # NB: sync with action.yml
 opkg_update() {
-    _sudo mkdir -p /var/lock
+    _sudo mkdir -p -- /var/lock
     retry _sudo opkg update
     opkg_updated=1
 }
@@ -120,8 +118,8 @@ case "$(uname -s)" in
         case "${base_distro}" in
             fedora)
                 dnf=dnf
-                if ! type -P dnf &>/dev/null; then
-                    if type -P microdnf &>/dev/null; then
+                if ! type -P dnf >/dev/null; then
+                    if type -P microdnf >/dev/null; then
                         # fedora-based distributions have "minimal" images that
                         # use microdnf instead of dnf.
                         dnf=microdnf
@@ -140,7 +138,7 @@ case "$(uname -s)" in
     *) bail "unrecognized OS type '$(uname -s)'" ;;
 esac
 
-if ! type -P git &>/dev/null; then
+if ! type -P git >/dev/null; then
     case "${host_os}" in
         linux*)
             case "${base_distro}" in

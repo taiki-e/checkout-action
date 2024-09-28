@@ -62,12 +62,10 @@ jobs:
       # TODO: use the current branch instead of @main
       - uses: taiki-e/checkout-action@main
       - uses: taiki-e/install-action@shellcheck
-        if: matrix.bash != 'cygwin'
       - uses: taiki-e/install-action@shfmt
-        if: matrix.bash != 'cygwin'
       - run: git ls-files
       - run: ./tools/tidy.sh
-        if: matrix.os != 'windows-2019' && matrix.bash != 'cygwin'
+        if: matrix.os != 'windows-2019'
   # For comparison
   actions-checkout:
     strategy:

@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [1.3.1] - 2024-09-28
+
 - Fix compatibility issue with Cygwin `sh`.
 
 ## [1.3.0] - 2024-08-11
@@ -36,7 +38,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/checkout-action/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/taiki-e/checkout-action/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/taiki-e/checkout-action/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/taiki-e/checkout-action/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/taiki-e/checkout-action/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/taiki-e/checkout-action/compare/v1.1.0...v1.1.1

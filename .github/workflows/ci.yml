@@ -31,7 +31,7 @@ jobs:
       matrix:
         include:
           # Test all non-deprecated images listed in https://github.com/actions/runner-images#available-images,
-          # and also msys64 & cygwin, which have different behavior then default https://github.com/taiki-e/install-action/pull/518#issuecomment-2160736760.
+          # and also msys64 & cygwin, which have different behavior than default https://github.com/taiki-e/install-action/pull/518#issuecomment-2160736760.
           - os: ubuntu-20.04
           - os: ubuntu-22.04
           - os: ubuntu-24.04

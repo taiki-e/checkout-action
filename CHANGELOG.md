@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Fix compatibility issue with Cygwin `sh`.
+
 ## [1.3.0] - 2024-08-11
 
 - Improve support for OpenWrt based containers/self-hosted runners.

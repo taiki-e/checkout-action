@@ -8,3 +8,4 @@ mirrorlist
 opkg
 pluginconf
 rootfs
+runneradmin

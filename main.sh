@@ -162,7 +162,11 @@ fi
 
 g git version
 
-g git config --global --add safe.directory "${wd}"
+case "${host_os}" in
+    # error: could not lock config file C:/tools/cygwin/home/runneradmin/.gitconfig: No such file or directory
+    windows) g git config --global --add safe.directory "${wd}" || : ;;
+    *) g git config --global --add safe.directory "${wd}" ;;
+esac
 
 g git init
 
@@ -180,4 +184,8 @@ else
     g retry git checkout --force "${GITHUB_REF}"
 fi
 
-g git config --global --add safe.directory "${wd}"
+case "${host_os}" in
+    # error: could not lock config file C:/tools/cygwin/home/runneradmin/.gitconfig: No such file or directory
+    windows) g git config --global --add safe.directory "${wd}" || : ;;
+    *) g git config --global --add safe.directory "${wd}" ;;
+esac

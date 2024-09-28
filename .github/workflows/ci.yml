@@ -51,21 +51,23 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - run: |
-          printf 'C:\msys64\mingw32\bin\n' >>"${GITHUB_PATH}"
-          printf 'C:\msys64\usr\bin\n' >>"${GITHUB_PATH}"
+          printf '%s\n' 'C:\msys64\mingw32\bin' >>"${GITHUB_PATH}"
+          printf '%s\n' 'C:\msys64\usr\bin' >>"${GITHUB_PATH}"
         if: matrix.bash == 'msys64'
       - run: |
           choco install --no-progress --requirechecksums cygwin
-          printf 'C:\tools\cygwin\bin\n' >>"${GITHUB_PATH}"
-          printf 'C:\tools\cygwin\usr\bin\n' >>"${GITHUB_PATH}"
+          printf '%s\n' 'C:\tools\cygwin\bin' >>"${GITHUB_PATH}"
+          printf '%s\n' 'C:\tools\cygwin\usr\bin' >>"${GITHUB_PATH}"
         if: matrix.bash == 'cygwin'
       # TODO: use the current branch instead of @main
       - uses: taiki-e/checkout-action@main
       - uses: taiki-e/install-action@shellcheck
+        if: matrix.bash != 'cygwin'
       - uses: taiki-e/install-action@shfmt
+        if: matrix.bash != 'cygwin'
       - run: git ls-files
       - run: ./tools/tidy.sh
-        if: matrix.os != 'windows-2019'
+        if: matrix.os != 'windows-2019' && matrix.bash != 'cygwin'
   # For comparison
   actions-checkout:
     strategy:

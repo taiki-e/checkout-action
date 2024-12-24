@@ -53,6 +53,11 @@ jobs:
             bash: msys64
           - os: windows-2022
             bash: cygwin
+          - os: windows-2025
+          - os: windows-2025
+            bash: msys64
+          - os: windows-2025
+            bash: cygwin
     runs-on: ${{ matrix.os }}
     steps:
       - run: |

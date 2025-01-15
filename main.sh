@@ -164,7 +164,7 @@ g git version
 
 case "${host_os}" in
     # error: could not lock config file C:/tools/cygwin/home/runneradmin/.gitconfig: No such file or directory
-    windows) g git config --global --add safe.directory "${wd}" || : ;;
+    windows) g git config --global --add safe.directory "${wd}" || true ;;
     *) g git config --global --add safe.directory "${wd}" ;;
 esac
 
@@ -186,6 +186,6 @@ fi
 
 case "${host_os}" in
     # error: could not lock config file C:/tools/cygwin/home/runneradmin/.gitconfig: No such file or directory
-    windows) g git config --global --add safe.directory "${wd}" || : ;;
+    windows) g git config --global --add safe.directory "${wd}" || true ;;
     *) g git config --global --add safe.directory "${wd}" ;;
 esac

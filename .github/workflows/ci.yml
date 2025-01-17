@@ -38,7 +38,9 @@ jobs:
           # Test all non-deprecated images listed in https://github.com/actions/runner-images#available-images,
           # and also msys64 & cygwin, which have different behavior than default https://github.com/taiki-e/install-action/pull/518#issuecomment-2160736760.
           - os: ubuntu-22.04
+          - os: ubuntu-22.04-arm
           - os: ubuntu-24.04
+          - os: ubuntu-24.04-arm
           - os: macos-13
           - os: macos-14
           - os: macos-15
@@ -74,7 +76,8 @@ jobs:
       - uses: taiki-e/install-action@shfmt
       - run: git ls-files
       - run: ./tools/tidy.sh
-        if: matrix.os != 'windows-2019'
+        # TODO(ubuntu-24.04-arm): prettier segfault
+        if: matrix.os != 'windows-2019' && matrix.os != 'ubuntu-24.04-arm'
   # For comparison
   actions-checkout:
     strategy:

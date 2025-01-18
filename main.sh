@@ -83,7 +83,13 @@ sys_install() {
     suse) zypper_install "$@" ;;
     arch) pacman_install "$@" ;;
     alpine) apk_install "$@" ;;
-    openwrt) opkg_install "$@" ;;
+    openwrt)
+      # if type -P apk >/dev/null; then
+      apk_install "$@"
+      # else
+      #   opkg_install "$@"
+      # fi
+      ;;
   esac
 }
 

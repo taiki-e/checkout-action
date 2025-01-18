@@ -123,9 +123,7 @@ jobs:
           - opensuse/tumbleweed:latest # glibc 2.39 (as of 2024-07-19)
           - archlinux:latest # glibc 2.39 (as of 2024-07-19)
           - alpine:latest # musl 1.2.5 (as of alpine 3.20)
-          # TODO: opkg doesn't work since https://github.com/openwrt/openwrt/issues/16935#issuecomment-2472747379
-          # but apk is not installed in the 23.05/24.10 container: "apk: not found"
-          # - openwrt/rootfs:x86-64-openwrt-24.10 # musl 1.2.5
+          - openwrt/rootfs:x86-64-openwrt-24.10 # musl 1.2.5
     runs-on: ubuntu-latest
     timeout-minutes: 60
     container: ${{ matrix.container }}

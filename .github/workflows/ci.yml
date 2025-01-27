@@ -76,8 +76,7 @@ jobs:
       - uses: taiki-e/install-action@shfmt
       - run: git ls-files
       - run: ./tools/tidy.sh
-        # TODO(ubuntu-24.04-arm): prettier segfault
-        if: matrix.os != 'windows-2019' && matrix.os != 'ubuntu-24.04-arm'
+        if: matrix.os != 'windows-2019'
   # For comparison
   actions-checkout:
     strategy:

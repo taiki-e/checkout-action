@@ -85,6 +85,50 @@ jobs:
       - run: git ls-files
       - run: ./tools/tidy.sh
 
+  test-options:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            # repository: taiki-e/.github
+            fetch-depth: 0
+            set-safe-directory: '*'
+          - os: ubuntu-latest
+            # repository: taiki-e/.github
+            fetch-depth: 50
+            set-safe-directory: false
+    runs-on: ubuntu-latest
+    steps:
+      # TODO: use the current branch instead of @main
+      - uses: taiki-e/checkout-action@main
+        with:
+          fetch-depth: ${{ matrix.fetch-depth }}
+          set-safe-directory: ${{ matrix.set-safe-directory }}
+      - run: git ls-files
+  # For comparison
+  actions-checkout-options:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            # repository: taiki-e/.github
+            fetch-depth: 0
+            set-safe-directory: '*'
+          - os: ubuntu-latest
+            # repository: taiki-e/.github
+            fetch-depth: 50
+            set-safe-directory: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: ${{ matrix.fetch-depth }}
+          set-safe-directory: ${{ matrix.set-safe-directory }}
+      - run: git ls-files
+
   test-container:
     strategy:
       fail-fast: false

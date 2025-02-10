@@ -3,6 +3,7 @@ archlinux
 distro
 doas
 fastestmirror
+ffdx
 microdnf
 mirrorlist
 opkg

@@ -61,6 +61,10 @@ jobs:
             bash: cygwin
     runs-on: ${{ matrix.os }}
     steps:
+      - run: lscpu
+        if: startsWith(matrix.os, 'ubuntu')
+      - run: sysctl hw.optional machdep.cpu
+        if: startsWith(matrix.os, 'macos')
       - run: |
           printf '%s\n' 'C:\msys64\mingw32\bin' >>"${GITHUB_PATH}"
           printf '%s\n' 'C:\msys64\usr\bin' >>"${GITHUB_PATH}"

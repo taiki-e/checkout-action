@@ -44,11 +44,6 @@ jobs:
           - os: macos-13
           - os: macos-14
           - os: macos-15
-          - os: windows-2019
-          - os: windows-2019
-            bash: msys64
-          - os: windows-2019
-            bash: cygwin
           - os: windows-2022
           - os: windows-2022
             bash: msys64
@@ -80,7 +75,6 @@ jobs:
       - uses: taiki-e/install-action@shfmt
       - run: git ls-files
       - run: ./tools/tidy.sh
-        if: matrix.os != 'windows-2019'
   # For comparison
   actions-checkout:
     strategy:

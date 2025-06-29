@@ -35,8 +35,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Test all non-deprecated images listed in https://github.com/actions/runner-images#available-images,
+          # Test all non-deprecated images listed in https://github.com/actions/runner-images#available-images
+          # and https://github.com/actions/partner-runner-images#available-images,
           # and also msys64 & cygwin, which have different behavior than default https://github.com/taiki-e/install-action/pull/518#issuecomment-2160736760.
+          # (msys64/cygwin is not installed on arm runner https://github.com/actions/partner-runner-images/issues/88)
           - os: ubuntu-22.04
           - os: ubuntu-22.04-arm
           - os: ubuntu-24.04
@@ -54,6 +56,7 @@ jobs:
             bash: msys64
           - os: windows-2025
             bash: cygwin
+          - os: windows-11-arm
     runs-on: ${{ matrix.os }}
     steps:
       - run: lscpu
@@ -75,6 +78,8 @@ jobs:
       - uses: taiki-e/install-action@shfmt
       - run: git ls-files
       - run: ./tools/tidy.sh
+        # Unsupported NodeJS version (19.9.0); >=20 is required
+        if: matrix.os != 'windows-11-arm'
   # For comparison
   actions-checkout:
     strategy:

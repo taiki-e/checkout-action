@@ -1,6 +1,5 @@
 almalinux
 archlinux
-distro
 doas
 fastestmirror
 microdnf

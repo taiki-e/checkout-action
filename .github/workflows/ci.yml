@@ -60,6 +60,7 @@ jobs:
             bash: cygwin
           - os: windows-11-arm
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     steps:
       - run: lscpu
         if: startsWith(matrix.os, 'ubuntu')
@@ -95,6 +96,7 @@ jobs:
           - macos-latest
           - windows-latest
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
         with:

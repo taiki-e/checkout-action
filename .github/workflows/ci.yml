@@ -62,12 +62,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
-      - run: lscpu
-        if: startsWith(matrix.os, 'ubuntu')
-      - run: sysctl hw.optional machdep.cpu
-        if: startsWith(matrix.os, 'macos')
-      - run: systeminfo
-        if: startsWith(matrix.os, 'windows')
       - run: |
           printf '%s\n' 'C:\msys64\mingw32\bin' >>"${GITHUB_PATH}"
           printf '%s\n' 'C:\msys64\usr\bin' >>"${GITHUB_PATH}"

@@ -8,7 +8,15 @@ g() {
   local cmd="$*"
   IFS=$'\n\t'
   printf '::group::%s\n' "${cmd#retry }"
-  "$@"
+  "$@" 2>&1
+  printf '::endgroup::\n'
+}
+g_for_hw_info() {
+  IFS=' '
+  local cmd="$*"
+  IFS=$'\n\t'
+  printf '::group::Show hardware information (%s)\n' "${cmd#retry }"
+  "$@" 2>&1 || true
   printf '::endgroup::\n'
 }
 retry() {
@@ -93,6 +101,7 @@ base_distro=''
 case "$(uname -s)" in
   Linux)
     host_os=linux
+    g_for_hw_info lscpu
     if [[ -e /etc/os-release ]]; then
       if grep -Eq '^ID_LIKE=' /etc/os-release; then
         base_distro=$(grep -E '^ID_LIKE=' /etc/os-release | cut -d= -f2)
@@ -133,8 +142,14 @@ case "$(uname -s)" in
         ;;
     esac
     ;;
-  Darwin) host_os=macos ;;
-  MINGW* | MSYS* | CYGWIN* | Windows_NT) host_os=windows ;;
+  Darwin)
+    host_os=macos
+    g_for_hw_info sysctl hw.optional machdep.cpu
+    ;;
+  MINGW* | MSYS* | CYGWIN* | Windows_NT)
+    host_os=windows
+    g_for_hw_info systeminfo
+    ;;
   *) bail "unrecognized OS type '$(uname -s)'" ;;
 esac
 

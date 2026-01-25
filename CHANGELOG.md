@@ -10,6 +10,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Show hardware information at the first if possible to help debugging runner issue.
+
+- Fix an issue where GitHub Actions' log grouping sometime doesn't work.
+
 ## [1.3.2] - 2026-01-11
 
 - Enable [release immutability](https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/immutable-releases).

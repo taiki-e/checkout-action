@@ -24,7 +24,7 @@ The features supported as of v1.0.0 are purely based on my use cases within publ
 Almost equivalent to (for public repositories):
 
 ```yaml
-- uses: actions/checkout@v4
+- uses: actions/checkout@v6
   with:
     persist-credentials: false
 ```

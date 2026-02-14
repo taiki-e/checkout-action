@@ -7,39 +7,28 @@ description: GitHub Action for checking out a repository. (Simplified actions/ch
 runs:
   using: composite
   steps:
-    - run: |
+    - name: Prepare
+      id: prepare
+      run: |
         set -eu
         if ! command -v bash >/dev/null; then
-          if grep -Eq '^ID=alpine' /etc/os-release; then
-            printf '::group::Install packages required for checkout-action (bash)\n'
-            # NB: sync with apk_install in main.sh
-            if command -v sudo >/dev/null; then
-              sudo apk --no-cache add bash
-            elif command -v doas >/dev/null; then
-              doas apk --no-cache add bash
-            else
-              apk --no-cache add bash
+          if command -v busybox >/dev/null; then
+            if test -n "${GITHUB_OUTPUT:-}"; then
+              printf 'shell=busybox sh -e {0}\n' >>"${GITHUB_OUTPUT}"
+              exit
             fi
-            printf '::endgroup::\n'
-          elif grep -Eq '^ID_LIKE=.*openwrt' /etc/os-release; then
-            printf '::group::Install packages required for checkout-action (bash)\n'
-            # NB: sync with opkg_install in main.sh
-            if command -v sudo >/dev/null; then
-              sudo mkdir -p /var/lock
-              sudo opkg update
-              sudo opkg install bash
-            else
-              mkdir -p /var/lock
-              opkg update
-              opkg install bash
-            fi
-            printf '::endgroup::\n'
-          else
-            printf '::error::checkout-action requires bash\n'
-            exit 1
           fi
+          printf '::error::checkout-action requires bash or busybox\n'
+          exit 1
         fi
       shell: sh
       if: runner.os == 'Linux'
-    - run: bash --noprofile --norc "${GITHUB_ACTION_PATH:?}/main.sh"
-      shell: bash
+    - name: Checkout
+      run: |
+        case "${CURRENT_SHELL}" in
+          busybox*) busybox sh "${GITHUB_ACTION_PATH:?}/main.sh" ;;
+          *) bash --noprofile --norc "${GITHUB_ACTION_PATH:?}/main.sh" ;;
+        esac
+      shell: ${{ steps.prepare.outputs.shell || 'bash' }}
+      env:
+        CURRENT_SHELL: ${{ steps.prepare.outputs.shell }}

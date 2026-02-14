@@ -10,6 +10,16 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- This action no longer needs `bash` on Linux if `busybox` is available, e.g., Alpine container. ([#13](https://github.com/taiki-e/checkout-action/pull/13))
+
+  Compatibility Note: Subsequent steps that have relied on this action installing bash for its setup may no longer work as a result. Such workflows can be fixed by adding the following steps (in the case of Alpine).
+
+  ```yaml
+  - run: apk --no-cache add bash
+  ```
+
+  Note that this action is not an action for installing those tools, so changing what this action installs for its setup is considered an implementation detail, so this is not considered a major change.
+
 ## [1.4.0] - 2026-01-25
 
 - Show hardware information at the first if possible to help debugging runner issue.

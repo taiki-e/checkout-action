@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-03-08
+
 - Avoid triggering [zizmor ref-confusion](https://docs.zizmor.sh/audits/#ref-confusion) when using this action in form of `uses: taiki-e/checkout-action@v1`.
 
 ## [1.4.0] - 2026-01-25
@@ -50,7 +52,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/checkout-action/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/taiki-e/checkout-action/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/taiki-e/checkout-action/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/taiki-e/checkout-action/compare/v1.3.2...v1.4.0
 [1.3.2]: https://github.com/taiki-e/checkout-action/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/taiki-e/checkout-action/compare/v1.3.0...v1.3.1

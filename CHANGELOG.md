@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Avoid triggering [zizmor ref-confusion](https://docs.zizmor.sh/audits/#ref-confusion) when using this action in form of `uses: taiki-e/checkout-action@v1`.
+
 ## [1.4.0] - 2026-01-25
 
 - Show hardware information at the first if possible to help debugging runner issue.

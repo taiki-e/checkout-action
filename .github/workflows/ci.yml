@@ -28,7 +28,8 @@ jobs:
       contents: write # for creating branch for pr
       pull-requests: write # unused (used in `codegen-automerge: true` case)
       security-events: write # for github/codeql-action/*
-    secrets: inherit
+    secrets:
+      PR_TOKEN_APP_PRIVATE_KEY: ${{ secrets.PR_TOKEN_APP_PRIVATE_KEY }}
 
   test:
     strategy:
@@ -185,7 +186,7 @@ jobs:
           sed -i /etc/yum.repos.d/*.repo -e 's!^mirrorlist!#mirrorlist!' \
             -e 's!^#baseurl=http://mirror.centos.org/!baseurl=https://vault.centos.org/!'
           sed -i 's/enabled=1/enabled=0/' /etc/yum/pluginconf.d/fastestmirror.conf
-          if [[ "${{ matrix.container }}" == "centos:6" ]]; then
+          if [[ "${CONTAINER}" == "centos:6" ]]; then
             # CentOS 6's git (1.7.1) has no --local/--no-recurse-submodules.
             # And even if we don't pass those flags, that version of git will not work
             # anyway due to of "fatal: Couldn't find remote ref" error.
@@ -194,6 +195,8 @@ jobs:
               https://vault.ius.io/el6/x86_64/packages/p/perl-Git18-1.8.5.5-4.ius.el6.noarch.rpm \
               https://vault.ius.io/el6/x86_64/packages/g/git18-1.8.5.5-4.ius.el6.x86_64.rpm
           fi
+        env:
+          CONTAINER: ${{ matrix.container }}
         if: startsWith(matrix.container, 'centos')
       # TODO: use the current branch instead of @main
       - uses: taiki-e/checkout-action@main

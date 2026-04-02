@@ -1,6 +1,7 @@
 almalinux
 archlinux
 cygdrive
+Ceuo
 doas
 fastestmirror
 LASTEXITCODE

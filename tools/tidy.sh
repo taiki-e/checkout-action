@@ -12,7 +12,7 @@ cd -- "$(dirname -- "$0")"/..
 # Note: This script requires the following tools:
 # - git 1.8+
 # - jq 1.6+
-# - npm (node 18+)
+# - npm (node 20+)
 # - python 3.6+, uv
 # - shfmt
 # - shellcheck
@@ -127,8 +127,9 @@ EOF
   exit 1
 fi
 
+npx() { command npx --min-release-age=14 --ignore-scripts=true --allow-git=none "$@"; }
+uvx() { command uvx --exclude-newer="14 days" "$@"; }
 yq() { uvx yq "$@"; }
-tomlq() { uvx --from yq tomlq "$@"; }
 case "$(uname -s)" in
   Linux)
     if [[ "$(uname -o)" == 'Android' ]]; then
@@ -182,7 +183,6 @@ case "$(uname -s)" in
           jq() { command jq "$@" | tr -d '\r'; }
         fi
         yq() { uvx yq "$@" | tr -d '\r'; }
-        tomlq() { uvx --from yq tomlq "$@" | tr -d '\r'; }
       fi
     fi
     ;;
@@ -239,7 +239,7 @@ if [[ ${#rust_files[@]} -gt 0 ]]; then
   info "checking Rust code style"
   check_config .rustfmt.toml "; consider adding with reference to https://github.com/taiki-e/cargo-hack/blob/HEAD/.rustfmt.toml"
   check_config .clippy.toml "; consider adding with reference to https://github.com/taiki-e/cargo-hack/blob/HEAD/.clippy.toml"
-  if check_install cargo jq uv; then
+  if check_install cargo jq; then
     # `cargo fmt` cannot recognize files not included in the current workspace and modules
     # defined inside macros, so run rustfmt directly.
     # We need to use nightly rustfmt because we use the unstable formatting options of rustfmt.
@@ -276,8 +276,8 @@ if [[ ${#rust_files[@]} -gt 0 ]]; then
     has_root_crate=''
     for pkg in $(jq -c '. as $metadata | .workspace_members[] as $id | $metadata.packages[] | select(.id == $id)' <<<"${metadata}"); do
       eval "$(jq -r '@sh "publish=\(.publish) manifest_path=\(.manifest_path)"' <<<"${pkg}")"
-      if [[ "$(tomlq -c '.lints' "${manifest_path}")" == 'null' ]]; then
-        error "no [lints] table in ${manifest_path} please add '[lints]' with 'workspace = true'"
+      if ! grep -Eq '^ *\[lints(\.|\])' "${manifest_path}"; then
+        error "no [lints] table in ${manifest_path}; please add '[lints]' with 'workspace = true'"
       fi
       # Publishing is unrestricted if null, and forbidden if an empty array.
       if [[ -z "${publish}" ]]; then
@@ -286,14 +286,18 @@ if [[ ${#rust_files[@]} -gt 0 ]]; then
       has_public_crate=1
       if [[ "${manifest_path}" == "${root_manifest}" ]]; then
         has_root_crate=1
-        exclude=$(tomlq -r '.package.exclude[]' "${manifest_path}")
-        if ! grep -Eq '^/\.\*$' <<<"${exclude}"; then
+        exclude=$(grep -E '^ *\[|^ *exclude *=' "${manifest_path}" | head -2)
+        if [[ "${exclude// /}" != '[package]'$'\n''exclude='* ]]; then
+          error "top-level Cargo.toml of non-virtual workspace should have 'exclude' field"
+        fi
+        exclude=$(cut -d= -f2 <<<"${exclude}")
+        if ! grep -Eq '"/\.\*"' <<<"${exclude}"; then
           error "top-level Cargo.toml of non-virtual workspace should have 'exclude' field with \"/.*\""
         fi
-        if [[ -e tools ]] && ! grep -Eq '^/tools$' <<<"${exclude}"; then
+        if [[ -e tools ]] && ! grep -Eq '"/tools"' <<<"${exclude}"; then
           error "top-level Cargo.toml of non-virtual workspace should have 'exclude' field with \"/tools\" if it exists"
         fi
-        if [[ -e target-specs ]] && ! grep -Eq '^/target-specs$' <<<"${exclude}"; then
+        if [[ -e target-specs ]] && ! grep -Eq '"/target-specs"' <<<"${exclude}"; then
           error "top-level Cargo.toml of non-virtual workspace should have 'exclude' field with \"/target-specs\" if it exists"
         fi
       fi
@@ -824,7 +828,9 @@ elif check_install shellcheck; then
     # Exclude SC2096 due to the way the temporary script is created.
     shellcheck_exclude=SC2086,SC2096,SC2129
     info "running \`shellcheck --exclude ${shellcheck_exclude}\` for scripts in .github/workflows/*.yml and **/action.yml"
-    if check_install jq uv; then
+    if [[ "${ostype}" =~ ^(netbsd|openbsd|dragonfly|illumos|solaris)$ ]] && [[ -n "${CI:-}" ]] && ! type -P uv >/dev/null; then
+      warn "this check is skipped on Dragonfly/illumos/Solaris due to installing uv is hard on these platform"
+    elif check_install jq uv; then
       shellcheck_for_gha() {
         local text=$1
         local shell=$2
@@ -968,15 +974,15 @@ if [[ -e .github/dependabot.yml ]]; then
   zizmor_targets+=(.github/dependabot.yml)
 fi
 if [[ ${#zizmor_targets[@]} -gt 0 ]]; then
-  if [[ "${ostype}" =~ ^(netbsd|openbsd|dragonfly|illumos|solaris)$ ]] && [[ -n "${CI:-}" ]] && ! type -P zizmor >/dev/null; then
-    warn "this check is skipped on NetBSD/OpenBSD/Dragonfly/illumos/Solaris due to installing zizmor is hard on these platform"
+  if [[ "${ostype}" =~ ^(netbsd|dragonfly|illumos|solaris)$ ]] && [[ -n "${CI:-}" ]] && ! type -P zizmor >/dev/null; then
+    warn "this check is skipped on NetBSD/Dragonfly/illumos/Solaris due to installing zizmor is hard on these platform"
   elif check_install zizmor; then
     # zizmor can also be used via uvx, but old version will be installed if glibc version is old.
     # Do not use `zizmor .` here because it also attempts to check submodules.
     IFS=' '
-    info "running \`zizmor -q --pedantic ${zizmor_targets[*]}\`"
+    info "running \`zizmor -q --persona=auditor ${zizmor_targets[*]}\`"
     IFS=$'\n\t'
-    zizmor -q --pedantic "${zizmor_targets[@]}"
+    zizmor -q --persona=auditor "${zizmor_targets[@]}"
   fi
 fi
 printf '\n'
@@ -1029,13 +1035,13 @@ fi
 if [[ -f .cspell.json ]]; then
   info "spell checking"
   project_dictionary=.github/.cspell/project-dictionary.txt
-  if check_install npm jq uv; then
+  if check_install npm jq; then
     has_rust=''
     if [[ -n "$(ls_files '*Cargo.toml')" ]]; then
       has_rust=1
       dependencies=''
       for manifest_path in $(ls_files '*Cargo.toml'); do
-        if [[ "${manifest_path}" != "Cargo.toml" ]] && [[ "$(tomlq -c '.workspace' "${manifest_path}")" == 'null' ]]; then
+        if [[ "${manifest_path}" != "Cargo.toml" ]] && grep -Eq '^ *\[workspace(\.|\])' "${manifest_path}"; then
           continue
         fi
         m=$(cargo metadata --format-version=1 --no-deps --manifest-path "${manifest_path}" || true)

@@ -78,15 +78,11 @@ jobs:
         with:
           tool: shellcheck,shfmt,uv,zizmor
           fallback: none
-      - run: mkdir -p -- ~/.config/uv && printf 'exclude-newer = "7 days"\n' >>~/.config/uv/uv.toml
-      # min-release-age requires npm 11.10+
+      # min-release-age and allow-git requires npm 11.10+
+      - run: npm --version
       - run: sudo npm install --location=global npm@11.11.0
         if: startsWith(matrix.os, 'ubuntu')
-      - run: sudo npm config set min-release-age=7 --location=global
-        if: startsWith(matrix.os, 'ubuntu')
       - run: npm install --location=global npm@11.11.0
-        if: (!startsWith(matrix.os, 'ubuntu'))
-      - run: npm config set min-release-age=7 --location=global
         if: (!startsWith(matrix.os, 'ubuntu'))
       - run: git ls-files
       - run: ./tools/tidy.sh
@@ -111,15 +107,11 @@ jobs:
         with:
           tool: shellcheck,shfmt,uv,zizmor
           fallback: none
-      - run: mkdir -p -- ~/.config/uv && printf 'exclude-newer = "7 days"\n' >>~/.config/uv/uv.toml
-      # min-release-age requires npm 11.10+
+      - run: npm --version
+      # min-release-age and allow-git requires npm 11.10+
       - run: sudo npm install --location=global npm@11.11.0
         if: startsWith(matrix.os, 'ubuntu')
-      - run: sudo npm config set min-release-age=7 --location=global
-        if: startsWith(matrix.os, 'ubuntu')
       - run: npm install --location=global npm@11.11.0
-        if: (!startsWith(matrix.os, 'ubuntu'))
-      - run: npm config set min-release-age=7 --location=global
         if: (!startsWith(matrix.os, 'ubuntu'))
       - run: git ls-files
       - run: ./tools/tidy.sh

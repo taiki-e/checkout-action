@@ -22,7 +22,7 @@ The features supported as of v1.0.0 are purely based on my use cases within publ
 - uses: taiki-e/checkout-action@v1
 ```
 
-Almost equivalent to (for public repositories):
+Almost equivalent to (for both public and private repositories):
 
 ```yaml
 - uses: actions/checkout@v6

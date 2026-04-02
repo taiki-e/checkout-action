@@ -85,6 +85,7 @@ jobs:
       - run: npm install --location=global npm@11.11.0
         if: (!startsWith(matrix.os, 'ubuntu'))
       - run: git ls-files
+      - run: test -f ./tools/tidy.sh
       - run: ./tools/tidy.sh
         # Unsupported NodeJS version (19.9.0); >=20 is required
         if: matrix.os != 'windows-11-arm'
@@ -114,6 +115,7 @@ jobs:
       - run: npm install --location=global npm@11.11.0
         if: (!startsWith(matrix.os, 'ubuntu'))
       - run: git ls-files
+      - run: test -f ./tools/tidy.sh
       - run: ./tools/tidy.sh
 
   test-container:
@@ -205,3 +207,4 @@ jobs:
       # TODO: use the current branch instead of @main
       - uses: taiki-e/checkout-action@main
       - run: git ls-files
+      - run: test -f ./tools/tidy.sh

@@ -43,3 +43,27 @@ runs:
       if: runner.os == 'Linux'
     - run: bash --noprofile --norc "${GITHUB_ACTION_PATH:?}/main.sh"
       shell: bash
+      if: runner.os != 'Windows'
+    # Use pwsh and retry on bash startup failure to work around windows-11-arm runner bug:
+    # https://github.com/actions/partner-runner-images/issues/169
+    - run: |
+        Set-StrictMode -Version Latest
+        for ($i=1; $i -le 10; $i++) {
+          $prev_err_action = $ErrorActionPreference
+          $ErrorActionPreference = "Continue"
+          & bash --noprofile --norc "$env:GITHUB_ACTION_PATH/main.sh"
+          $code = $LASTEXITCODE
+          $ErrorActionPreference = "$prev_err_action"
+          if (Test-Path "$env:USERPROFILE\.checkout-action-init") {
+            # If bash started successfully, main.sh creates init file.
+            Remove-Item "$env:USERPROFILE\.checkout-action-init" -Force
+            exit $code
+          }
+          if ($i -lt 10) {
+            Write-Output "::warning::installation failed due to bash startup failure (<https://github.com/actions/partner-runner-images/issues/169>); retrying..."
+          }
+        }
+        Write-Output "::error::installation failed due to bash startup failure (<https://github.com/actions/partner-runner-images/issues/169>); this maybe resolved by re-running job"
+        exit 1
+      shell: pwsh
+      if: runner.os == 'Windows'

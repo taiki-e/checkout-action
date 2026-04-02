@@ -1,7 +1,9 @@
 almalinux
 archlinux
+cygdrive
 doas
 fastestmirror
+LASTEXITCODE
 microdnf
 mirrorlist
 opkg
@@ -9,3 +11,4 @@ pluginconf
 rootfs
 runneradmin
 systeminfo
+USERPROFILE

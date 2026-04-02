@@ -39,10 +39,8 @@ runs:
             exit 1
           fi
         fi
+        bash --noprofile --norc "${GITHUB_ACTION_PATH:?}/main.sh"
       shell: sh
-      if: runner.os == 'Linux'
-    - run: bash --noprofile --norc "${GITHUB_ACTION_PATH:?}/main.sh"
-      shell: bash
       if: runner.os != 'Windows'
     # Use pwsh and retry on bash startup failure to work around windows-11-arm runner bug:
     # https://github.com/actions/partner-runner-images/issues/169

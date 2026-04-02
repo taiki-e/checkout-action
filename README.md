@@ -74,7 +74,7 @@ On Linux, if any required tools are missing, this action will attempt to install
 
 On other platforms, at least the following tools are required:
 
-- bash 3.2+
+- bash 3.2+ (or busybox on Linux)
 - git 1.8+
 
 Known environments affected by the above version requirements are CentOS 6 (EoL on 2020-11) and Ubuntu 12.04 (EoL on 2017-04) using git 1.7 (see "Install requirements" in [our CI config](https://github.com/taiki-e/checkout-action/blob/HEAD/.github/workflows/ci.yml) for example of workaround).

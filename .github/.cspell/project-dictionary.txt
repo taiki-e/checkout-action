@@ -2,6 +2,7 @@ almalinux
 archlinux
 clangarm
 cygdrive
+Ceuo
 doas
 fastestmirror
 LASTEXITCODE

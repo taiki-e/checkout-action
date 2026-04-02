@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0 OR MIT
-set -CeEuo pipefail
+# Do not set -E as busybox 3.15 and older don't support it.
+set -Ceuo pipefail
 IFS=$'\n\t'
 
 g() {

@@ -175,6 +175,16 @@ jobs:
         if: startsWith(matrix.container, 'debian:9') || startsWith(matrix.container, 'debian:10')
       - name: Install requirements (centos)
         run: |
+          retry() {
+            for i in {1..10}; do
+              if "$@"; then
+                return 0
+              else
+                sleep "${i}"
+              fi
+            done
+            "$@"
+          }
           # In CentOS, the old repositories is removed from the main mirrors just after EoL.
           # https://github.com/rust-lang/rust/pull/126352
           sed -i /etc/yum.repos.d/*.repo -e 's!^mirrorlist!#mirrorlist!' \
@@ -184,8 +194,8 @@ jobs:
             # CentOS 6's git (1.7.1) has no --local/--no-recurse-submodules.
             # And even if we don't pass those flags, that version of git will not work
             # anyway due to of "fatal: Couldn't find remote ref" error.
-            yum install -y openssh-clients perl perl-Error perl-TermReadKey rsync
-            rpm -i \
+            retry yum install -y openssh-clients perl perl-Error perl-TermReadKey rsync
+            retry rpm -i \
               https://vault.ius.io/el6/x86_64/packages/p/perl-Git18-1.8.5.5-4.ius.el6.noarch.rpm \
               https://vault.ius.io/el6/x86_64/packages/g/git18-1.8.5.5-4.ius.el6.x86_64.rpm
           fi

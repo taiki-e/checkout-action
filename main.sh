@@ -95,8 +95,6 @@ sys_install() {
   esac
 }
 
-wd=$(pwd)
-
 base_distro=''
 case "$(uname -s)" in
   Linux)
@@ -154,6 +152,7 @@ case "$(uname -s)" in
 esac
 
 home="${HOME:-}"
+wd=$(pwd)
 if [[ -z "${home}" ]]; then
   # https://github.com/IBM/actionspz/issues/30
   home=$(realpath ~)
@@ -164,9 +163,11 @@ if [[ "${host_os}" == "windows" ]]; then
     if [[ -d "${home/\/home\///c/Users/}" ]]; then
       # MSYS2 https://github.com/taiki-e/install-action/pull/518#issuecomment-2160736760
       home="${home/\/home\///c/Users/}"
+      wd="${wd/\/home\///c/Users/}"
     elif [[ -d "${home/\/home\///cygdrive/c/Users/}" ]]; then
       # Cygwin https://github.com/taiki-e/install-action/issues/224#issuecomment-1720196288
       home="${home/\/home\///cygdrive/c/Users/}"
+      wd="${wd/\/home\///cygdrive/c/Users/}"
     else
       warn "\$HOME starting /home/ (${home}) on Windows bash is usually fake path, this may cause checkout issue"
     fi
@@ -174,6 +175,9 @@ if [[ "${host_os}" == "windows" ]]; then
   # See action.yml.
   touch -- "${home}/.checkout-action-init"
 fi
+add_safe_directory() {
+  g git config --global --add safe.directory "${wd}"
+}
 
 if ! type -P git >/dev/null; then
   case "${host_os}" in
@@ -199,11 +203,7 @@ fi
 
 g git version
 
-case "${host_os}" in
-  # error: could not lock config file C:/tools/cygwin/home/runneradmin/.gitconfig: No such file or directory
-  windows) g git config --global --add safe.directory "${wd}" || true ;;
-  *) g git config --global --add safe.directory "${wd}" ;;
-esac
+add_safe_directory
 
 g git init
 
@@ -221,9 +221,4 @@ else
   g retry git checkout --force "${GITHUB_REF}"
 fi
 
-if [[ "${host_os}" == "windows" ]]; then
-  # error: could not lock config file C:/tools/cygwin/home/runneradmin/.gitconfig: No such file or directory
-  g git config --global --add safe.directory "${wd}" || true
-else
-  g git config --global --add safe.directory "${wd}"
-fi
+add_safe_directory

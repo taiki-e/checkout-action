@@ -7,6 +7,7 @@ GitHub Action for checking out a repository. (Simplified [actions/checkout] alte
 
 - [Usage](#usage)
 - [Why not actions/checkout?](#why-not-actionscheckout)
+- [Security](#security)
 - [Compatibility](#compatibility)
 - [Related Projects](#related-projects)
 - [License](#license)
@@ -34,6 +35,10 @@ Almost equivalent to (for public repositories):
 As of 2024-03-08, the latest version of [actions/checkout] that uses node20 [doesn't work on CentOS 7](https://github.com/actions/runner/issues/2906).
 
 Also, in `actions/*` actions, each update of the Node.js used increments the major version (it is the correct behavior for compatibility although), so workflows that use it require maintenance on a regular basis. (Unless you have fully automated dependency updates.)
+
+## Security
+
+The `@v<major>` tags are updated with each release. To enhance workflow stability and security against supply chain attacks, use the `@v<major>.<minor>.<patch>` tag or their hash to pin the version. Since all releases are immutable, pinning the version in either way should have the same effect.
 
 ## Compatibility
 

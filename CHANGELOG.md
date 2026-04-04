@@ -10,6 +10,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-04-04
+
 - Implement workaround for [windows-11-arm runner bug](https://github.com/actions/partner-runner-images/issues/169) which may causes issue that the action successfully completes but not checked out.
 
   We have not yet received any reports of this issue occurring with this action, but given the nature of the problem, it is possible that it could be affected.
@@ -56,7 +58,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 Initial release
 
-[Unreleased]: https://github.com/taiki-e/checkout-action/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/taiki-e/checkout-action/compare/v1.4.2...HEAD
+[1.4.2]: https://github.com/taiki-e/checkout-action/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/taiki-e/checkout-action/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/taiki-e/checkout-action/compare/v1.3.2...v1.4.0
 [1.3.2]: https://github.com/taiki-e/checkout-action/compare/v1.3.1...v1.3.2

@@ -74,21 +74,10 @@ jobs:
         if: matrix.bash == 'cygwin'
       # TODO: use the current branch instead of @main
       - uses: taiki-e/checkout-action@main
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: shellcheck,shfmt,uv,zizmor
-          fallback: none
-      # min-release-age and allow-git requires npm 11.10+
-      - run: npm --version
-      - run: sudo npm install --location=global npm@11.11.0
-        if: startsWith(matrix.os, 'ubuntu')
-      - run: npm install --location=global npm@11.11.0
-        if: (!startsWith(matrix.os, 'ubuntu'))
       - run: git ls-files
       - run: test -f ./tools/tidy.sh
       - run: ./tools/tidy.sh
-        # Unsupported NodeJS version (19.9.0); >=20 is required
-        if: matrix.os != 'windows-11-arm'
+        if: startsWith(matrix.os, 'ubuntu') && matrix.os != 'ubuntu-slim'
   # For comparison
   actions-checkout:
     strategy:
@@ -104,19 +93,10 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: shellcheck,shfmt,uv,zizmor
-          fallback: none
-      - run: npm --version
-      # min-release-age and allow-git requires npm 11.10+
-      - run: sudo npm install --location=global npm@11.11.0
-        if: startsWith(matrix.os, 'ubuntu')
-      - run: npm install --location=global npm@11.11.0
-        if: (!startsWith(matrix.os, 'ubuntu'))
       - run: git ls-files
       - run: test -f ./tools/tidy.sh
       - run: ./tools/tidy.sh
+        if: startsWith(matrix.os, 'ubuntu')
 
   test-container:
     strategy:

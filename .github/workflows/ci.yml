@@ -73,7 +73,7 @@ jobs:
           printf '%s\n' 'C:\tools\cygwin\usr\bin' >>"${GITHUB_PATH}"
         if: matrix.bash == 'cygwin'
       # TODO: use the current branch instead of @main
-      - uses: taiki-e/checkout-action@main
+      - uses: taiki-e/checkout-action@private
       - run: git ls-files
       - run: test -f ./tools/tidy.sh
       - run: ./tools/tidy.sh
@@ -185,6 +185,6 @@ jobs:
           CONTAINER: ${{ matrix.container }}
         if: startsWith(matrix.container, 'centos')
       # TODO: use the current branch instead of @main
-      - uses: taiki-e/checkout-action@main
+      - uses: taiki-e/checkout-action@private
       - run: git ls-files
       - run: test -f ./tools/tidy.sh

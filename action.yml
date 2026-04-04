@@ -1,6 +1,12 @@
 name: checkout-action
 description: GitHub Action for checking out a repository. (Simplified actions/checkout alternative that does not depend on Node.js.)
 
+inputs:
+  token:
+    description: GitHub token for checking out a repository.
+    required: false
+    default: ${{ github.token }}
+
 # Note:
 # - inputs.* should be manually mapped to INPUT_* due to https://github.com/actions/runner/issues/665
 # - Use GITHUB_*/RUNNER_* instead of github.*/runner.* due to https://github.com/actions/runner/issues/2185
@@ -41,6 +47,9 @@ runs:
         fi
         bash --noprofile --norc "${GITHUB_ACTION_PATH:?}/main.sh"
       shell: sh
+      env:
+        # NB: Sync with Windows case.
+        GITHUB_TOKEN: ${{ github.token }}
       if: runner.os != 'Windows'
     # Use pwsh and retry on bash startup failure to work around windows-11-arm runner bug:
     # https://github.com/actions/partner-runner-images/issues/169
@@ -64,4 +73,7 @@ runs:
         Write-Output "::error::installation failed due to bash startup failure (<https://github.com/actions/partner-runner-images/issues/169>); this maybe resolved by re-running job"
         exit 1
       shell: pwsh
+      env:
+        # NB: Sync with non-Windows case.
+        GITHUB_TOKEN: ${{ github.token }}
       if: runner.os == 'Windows'

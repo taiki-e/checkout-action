@@ -217,6 +217,25 @@ g git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
 
 g git config --local gc.auto 0
 
+if [[ -n "${GITHUB_TOKEN}" ]]; then
+  # TODO: respect global credential.helper if token is default for compatibility with old version.
+  prev_credential_helper=$(git config get --local credential.helper || true)
+  if [[ -n "${prev_credential_helper}" ]]; then
+    bail "credential helper is already set (${prev_credential_helper}); this should not happen in clean checkout"
+  fi
+  protocol="${GITHUB_SERVER_URL%%://*}"
+  hostname="${GITHUB_SERVER_URL#*://}"
+  g git config --local credential.helper cache
+  git credential approve <<EOF
+protocol=${protocol}
+host=${hostname}
+username=${GITHUB_ACTOR}
+password=${GITHUB_TOKEN}
+EOF
+  # Remove credential helper config on exit.
+  trap -- 'g git credential-cache exit; g git config --local --unset credential.helper || true' EXIT
+fi
+
 if [[ "${GITHUB_REF}" == "refs/heads/"* ]]; then
   branch="${GITHUB_REF#refs/heads/}"
   remote_ref="refs/remotes/origin/${branch}"

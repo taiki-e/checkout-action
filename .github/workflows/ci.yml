@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   tidy:
-    uses: taiki-e/github-actions/.github/workflows/tidy.yml@main
+    uses: taiki-e/github-actions/.github/workflows/tidy.yml@7e4093bf4e87dd120ac0c3be2e47ebe7f737a47d # main
     permissions:
       contents: write # for creating branch for pr
       pull-requests: write # unused (used in `codegen-automerge: true` case)
@@ -73,7 +73,7 @@ jobs:
           printf '%s\n' 'C:\tools\cygwin\usr\bin' >>"${GITHUB_PATH}"
         if: matrix.bash == 'cygwin'
       # TODO: use the current branch instead of @main
-      - uses: taiki-e/checkout-action@main
+      - uses: taiki-e/checkout-action@main # zizmor: ignore[unpinned-uses] # For test.
       - run: git ls-files
       - run: test -f ./tools/tidy.sh
       - run: ./tools/tidy.sh
@@ -185,6 +185,6 @@ jobs:
           CONTAINER: ${{ matrix.container }}
         if: startsWith(matrix.container, 'centos')
       # TODO: use the current branch instead of @main
-      - uses: taiki-e/checkout-action@main
+      - uses: taiki-e/checkout-action@main # zizmor: ignore[unpinned-uses] # For test.
       - run: git ls-files
       - run: test -f ./tools/tidy.sh

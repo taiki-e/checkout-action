@@ -100,7 +100,13 @@ case "$(uname -s)" in
   Linux)
     host_os=linux
     g_for_hw_info lscpu
-    if [[ -e /etc/os-release ]]; then
+    if [[ -e /etc/redhat-release ]]; then
+      # /etc/os-release is available on RHEL/CentOS 7+
+      base_distro=fedora
+    elif [[ -e /etc/debian_version ]]; then
+      # /etc/os-release is available on Debian 7+
+      base_distro=debian
+    elif [[ -e /etc/os-release ]]; then
       if grep -Eq '^ID_LIKE=' /etc/os-release; then
         base_distro=$(grep -E '^ID_LIKE=' /etc/os-release | cut -d= -f2)
         case "${base_distro}" in
@@ -115,12 +121,6 @@ case "$(uname -s)" in
         base_distro=$(grep -E '^ID=' /etc/os-release | cut -d= -f2)
       fi
       base_distro="${base_distro//\"/}"
-    elif [[ -e /etc/redhat-release ]]; then
-      # /etc/os-release is available on RHEL/CentOS 7+
-      base_distro=fedora
-    elif [[ -e /etc/debian_version ]]; then
-      # /etc/os-release is available on Debian 7+
-      base_distro=debian
     fi
     case "${base_distro}" in
       fedora)

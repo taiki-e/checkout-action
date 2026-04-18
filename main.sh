@@ -185,7 +185,7 @@ if [[ "${host_os}" == "windows" ]]; then
     fi
   fi
   # See action.yml.
-  touch -- "${home}/.checkout-action-init"
+  printf '' >|"${home}/.checkout-action-init"
 fi
 add_safe_directory() {
   # error: could not lock config file C:/tools/cygwin/home/runneradmin/.gitconfig: No such file or directory

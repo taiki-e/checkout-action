@@ -6,6 +6,7 @@
 GitHub Action for checking out a repository. (Simplified [actions/checkout] alternative that does not depend on Node.js.)
 
 - [Usage](#usage)
+  - [Inputs](#inputs)
 - [Why not actions/checkout?](#why-not-actionscheckout)
 - [Security](#security)
 - [Compatibility](#compatibility)
@@ -46,6 +47,12 @@ Almost equivalent to:
   with:
     persist-credentials: false
 ```
+
+### Inputs
+
+| Name | Required | Description | Type | Default |
+| ---- | :------: | ----------- | ---- | ------- |
+| token | | GitHub token for checking out a repository. | String | |
 
 ## Why not actions/checkout?
 

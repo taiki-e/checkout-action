@@ -102,6 +102,8 @@ fi
 token="${INPUT_TOKEN}"
 # This prevents tokens from being exposed to subprocesses via environment variables.
 unset INPUT_TOKEN
+# This prevents tokens from being exposed to log when tracing is activated.
+unset GIT_TRACE_REDACT GIT_CURL_VERBOSE GIT_TRACE_CURL
 
 base_distro=''
 case "$(uname -s)" in

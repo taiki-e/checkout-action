@@ -251,6 +251,7 @@ password=${token}
 EOF
   # Remove credential helper config on exit.
   # --replace-all is needed to avoid "warning: credential.helper has multiple values" on unset.
+  # On bash (at least on 3.2+), trap EXIT catches all exiting signals other than SIGKILL, and no way to trap SIGKILL.
   trap -- 'g git credential-cache exit; g git config --local --replace-all credential.helper ""; g git config --local --unset credential.helper' EXIT
 fi
 

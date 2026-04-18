@@ -234,9 +234,12 @@ if [[ -n "${token}" ]]; then
   hostname="${GITHUB_SERVER_URL#*://}"
   hostname="${hostname%%/*}"
   # Sanitize inputs and runner-provided environment variables for here-doc.
-  if [[ "${protocol}" == *$'\n'* ]] || [[ "${hostname}" == *$'\n'* ]] || [[ "${GITHUB_ACTOR}" == *$'\n'* ]] || [[ "${token}" == *$'\n'* ]]; then
-    bail "GITHUB_SERVER_URL and GITHUB_ACTOR and 'token' input option must not contain newline"
-  fi
+  # Also checks encoded newline (%0a) and carriage return (\r, %0d) for old git affected by CVE-2020-5260/CVE-2024-52006.
+  for c in $'\n' '%0a' '%0A' $'\r' '%0d' '%0D'; do
+    if [[ "${protocol}" == *"${c}"* ]] || [[ "${hostname}" == *"${c}"* ]] || [[ "${GITHUB_ACTOR}" == *"${c}"* ]] || [[ "${token}" == *"${c}"* ]]; then
+      bail "GITHUB_SERVER_URL and GITHUB_ACTOR and 'token' input option must not contain newline"
+    fi
+  done
   # Do not use `git config --local credential.helper cache` because it inherits global credential helpers.
   g git config --local credential.helper ""
   g git config --local --add credential.helper cache

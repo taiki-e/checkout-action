@@ -237,7 +237,9 @@ if [[ -n "${token}" ]]; then
   if [[ "${protocol}" == *$'\n'* ]] || [[ "${hostname}" == *$'\n'* ]] || [[ "${GITHUB_ACTOR}" == *$'\n'* ]] || [[ "${token}" == *$'\n'* ]]; then
     bail "GITHUB_SERVER_URL and GITHUB_ACTOR and 'token' input option must not contain newline"
   fi
-  g git config --local credential.helper cache
+  # Do not use `git config --local credential.helper cache` because it inherits global credential helpers.
+  g git config --local credential.helper ""
+  g git config --local --add credential.helper cache
   git credential approve <<EOF
 protocol=${protocol}
 host=${hostname}
@@ -245,7 +247,8 @@ username=${GITHUB_ACTOR}
 password=${token}
 EOF
   # Remove credential helper config on exit.
-  trap -- 'g git credential-cache exit; g git config --local --unset credential.helper || true' EXIT
+  # --replace-all is needed to avoid "warning: credential.helper has multiple values" on unset.
+  trap -- 'g git credential-cache exit; g git config --local --replace-all credential.helper ""; g git config --local --unset credential.helper' EXIT
 fi
 
 if [[ "${GITHUB_REF}" == "refs/heads/"* ]]; then

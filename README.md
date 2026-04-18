@@ -22,7 +22,24 @@ The features supported as of v1.0.0 are purely based on my use cases within publ
 - uses: taiki-e/checkout-action@v1
 ```
 
-Almost equivalent to (for public repositories):
+Almost equivalent to:
+
+```yaml
+- uses: actions/checkout@v6
+  with:
+    persist-credentials: false
+    token: ''
+```
+
+To use this action in private repositories, explicitly set `token` input option:
+
+```yaml
+- uses: taiki-e/checkout-action@v1
+  with:
+    token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+Almost equivalent to:
 
 ```yaml
 - uses: actions/checkout@v6
@@ -35,6 +52,8 @@ Almost equivalent to (for public repositories):
 As of 2024-03-08, the latest version of [actions/checkout] that uses node20 [doesn't work on CentOS 7](https://github.com/actions/runner/issues/2906).
 
 Also, in `actions/*` actions, each update of the Node.js used increments the major version (it is the correct behavior for compatibility although), so workflows that use it require maintenance on a regular basis. (Unless you have fully automated dependency updates.)
+
+In addition to not using tokens by default, this action does not write credentials to disk even if `token` input option is set, but actions/checkout (as of 6.0.2) [writes credentials to disk as plaintext even when `persist-credentials` is set to `false`, when git is available](https://github.com/taiki-e/checkout-action/pull/16). Therefore, this action is considered more secure than actions/checkout not only by default but also when `persist-credentials` is set to `false`.
 
 ## Security
 

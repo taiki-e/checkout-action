@@ -10,6 +10,26 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 ## [Unreleased]
 
+- Support checking out private repository. ([#16](https://github.com/taiki-e/checkout-action/pull/16))
+
+  To use this action in private repositories, explicitly set `token` input option:
+
+  ```yaml
+  - uses: taiki-e/checkout-action@v1
+    with:
+      token: ${{ secrets.GITHUB_TOKEN }}
+  ```
+
+  Almost equivalent to:
+
+  ```yaml
+  - uses: actions/checkout@v6
+    with:
+      persist-credentials: false
+  ```
+
+  Unlike actions/checkout (which writes credentials to disk as plaintext even when `persist-credentials` is set to `false`, when git is available), this action does not write credentials to disk even if `token` input option is set.
+
 ## [1.4.2] - 2026-04-04
 
 - Implement workaround for [windows-11-arm runner bug](https://github.com/actions/partner-runner-images/issues/169) which may causes issue that the action successfully completes but not checked out.

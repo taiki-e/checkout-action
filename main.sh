@@ -95,6 +95,14 @@ sys_install() {
   esac
 }
 
+if [[ $# -gt 0 ]]; then
+  bail "invalid argument '$1'"
+fi
+
+token="${INPUT_TOKEN}"
+# This prevents tokens from being exposed to subprocesses via environment variables.
+unset INPUT_TOKEN
+
 base_distro=''
 case "$(uname -s)" in
   Linux)
@@ -216,6 +224,29 @@ g git init
 g git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
 
 g git config --local gc.auto 0
+
+if [[ -n "${token}" ]]; then
+  prev_credential_helper=$(git config get --local credential.helper || true)
+  if [[ -n "${prev_credential_helper}" ]]; then
+    bail "credential helper is already set (${prev_credential_helper}); this should not happen in clean checkout"
+  fi
+  protocol="${GITHUB_SERVER_URL%%://*}"
+  hostname="${GITHUB_SERVER_URL#*://}"
+  hostname="${hostname%%/*}"
+  # Sanitize inputs and runner-provided environment variables for here-doc.
+  if [[ "${protocol}" == *$'\n'* ]] || [[ "${hostname}" == *$'\n'* ]] || [[ "${GITHUB_ACTOR}" == *$'\n'* ]] || [[ "${token}" == *$'\n'* ]]; then
+    bail "GITHUB_SERVER_URL and GITHUB_ACTOR and 'token' input option must not contain newline"
+  fi
+  g git config --local credential.helper cache
+  git credential approve <<EOF
+protocol=${protocol}
+host=${hostname}
+username=${GITHUB_ACTOR}
+password=${token}
+EOF
+  # Remove credential helper config on exit.
+  trap -- 'g git credential-cache exit; g git config --local --unset credential.helper || true' EXIT
+fi
 
 if [[ "${GITHUB_REF}" == "refs/heads/"* ]]; then
   branch="${GITHUB_REF#refs/heads/}"

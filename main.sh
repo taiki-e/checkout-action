@@ -327,43 +327,48 @@ g "${git}" remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
 g "${git}" config --local gc.auto 0
 
 if [[ -n "${token}" ]]; then
-  prev_credential_helper=$("${git}" config get --local credential.helper || true)
-  if [[ -n "${prev_credential_helper}" ]]; then
-    bail "credential helper is already set (${prev_credential_helper}); this should not happen in clean checkout"
-  fi
   protocol="${GITHUB_SERVER_URL%%://*}"
   hostname="${GITHUB_SERVER_URL#*://}"
   hostname="${hostname%%/*}"
   # Sanitize inputs and runner-provided environment variables for here-doc.
   # Also checks encoded newline (%0a) and carriage return (\r, %0d) for old git affected by CVE-2020-5260/CVE-2024-52006.
   for c in $'\n' '%0a' '%0A' $'\r' '%0d' '%0D'; do
-    if [[ "${protocol}" == *"${c}"* ]] || [[ "${hostname}" == *"${c}"* ]] || [[ "${GITHUB_ACTOR}" == *"${c}"* ]] || [[ "${token}" == *"${c}"* ]]; then
-      bail "GITHUB_SERVER_URL and GITHUB_ACTOR and 'token' input option must not contain newline"
+    if [[ "${protocol}" == *"${c}"* ]] || [[ "${hostname}" == *"${c}"* ]] || [[ "${token}" == *"${c}"* ]]; then
+      bail "GITHUB_SERVER_URL and 'token' input option must not contain newline"
     fi
   done
-  # Do not use `git config --local credential.helper cache` because it inherits global credential helpers.
-  g "${git}" config --local credential.helper ""
-  g "${git}" config --local --add credential.helper cache
-  "${git}" credential approve <<EOF
-protocol=${protocol}
-host=${hostname}
-username=${GITHUB_ACTOR}
-password=${token}
-EOF
-  # Remove credential helper config on exit.
-  # --replace-all is needed to avoid "warning: credential.helper has multiple values" on unset.
-  # On bash (at least on 3.2+), trap EXIT catches all exiting signals other than SIGKILL, and no way to trap SIGKILL.
-  trap -- 'g "${git}" credential-cache exit; g "${git}" config --local --replace-all credential.helper ""; g "${git}" config --local --unset credential.helper' EXIT
 fi
 
+fetch_args=(--no-tags --prune --no-recurse-submodules --depth=1 origin)
+checkout_args=(--force)
 if [[ "${GITHUB_REF}" == "refs/heads/"* ]]; then
   branch="${GITHUB_REF#refs/heads/}"
   remote_ref="refs/remotes/origin/${branch}"
-  g retry "${git}" fetch --no-tags --prune --no-recurse-submodules --depth=1 origin "+${GITHUB_SHA}:${remote_ref}"
-  g retry "${git}" checkout --force -B "${branch}" "${remote_ref}"
+  fetch_args+=("+${GITHUB_SHA}:${remote_ref}")
+  checkout_args+=(-B "${branch}" "${remote_ref}")
 else
-  g retry "${git}" fetch --no-tags --prune --no-recurse-submodules --depth=1 origin "+${GITHUB_SHA}:${GITHUB_REF}"
-  g retry "${git}" checkout --force "${GITHUB_REF}"
+  fetch_args+=("+${GITHUB_SHA}:${GITHUB_REF}")
+  checkout_args+=("${GITHUB_REF}")
 fi
+
+IFS=' '
+cmd="${git} fetch ${fetch_args[*]}"
+IFS=$'\n\t'
+printf '::group::%s\n' "${cmd}"
+if [[ -n "${token}" ]]; then
+  # shellcheck disable=SC2016
+  INPUT_PROTOCOL="${protocol}" \
+    INPUT_HOSTNAME="${hostname}" \
+    INPUT_TOKEN="${token}" \
+    retry "${git}" \
+    -c 'credential.helper=' \
+    -c 'credential.helper=!f() { printf "protocol=%s\nhost=%s\nusername=x-access-token\npassword=%s\n" "${INPUT_PROTOCOL}" "${INPUT_HOSTNAME}" "${INPUT_TOKEN}"; }; f' \
+    fetch "${fetch_args[@]}" 2>&1
+else
+  retry "${git}" fetch "${fetch_args[@]}" 2>&1
+fi
+printf '::endgroup::\n'
+
+g retry "${git}" checkout "${checkout_args[@]}"
 
 add_safe_directory

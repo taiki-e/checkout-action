@@ -61,7 +61,7 @@ runs:
           printf '::warning::bash is unavailable at standard location; using %s\n' "$(command -v bash)"
           bash --noprofile --norc "${GITHUB_ACTION_PATH:?}/main.sh"
         fi
-      shell: /bin/sh -eu {0}
+      shell: /usr/bin/env -u ENV -u BASH_ENV -u CDPATH -u SHELLOPTS -u BASHOPTS /bin/sh -eu {0} # zizmor: ignore[misfeature] false positive
       env:
         # NB: Sync with Windows case.
         INPUT_TOKEN: ${{ inputs.token }}
@@ -70,6 +70,11 @@ runs:
     # https://github.com/actions/partner-runner-images/issues/169
     - run: |
         Set-StrictMode -Version Latest
+        if (Test-Path "Env:ENV") { Remove-Item Env:\ENV }
+        if (Test-Path "Env:BASH_ENV") { Remove-Item Env:\BASH_ENV }
+        if (Test-Path "Env:CDPATH") { Remove-Item Env:\CDPATH }
+        if (Test-Path "Env:SHELLOPTS") { Remove-Item Env:\SHELLOPTS }
+        if (Test-Path "Env:BASHOPTS") { Remove-Item Env:\BASHOPTS }
         if (Test-Path "Env:BASH_FUNC_*") {
           Write-Output "::error::bash function injection via BASH_FUNC_ environment variable is not allowed for security reasons"
           exit 1

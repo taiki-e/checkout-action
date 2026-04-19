@@ -1,5 +1,6 @@
 almalinux
 archlinux
+CDPATH
 clangarm
 cygdrive
 doas

@@ -381,7 +381,20 @@ if [[ -n "${token}" ]]; then
     INPUT_TOKEN="${token}" \
     retry "${git}" \
     -c 'credential.helper=' \
-    -c 'credential.helper=!f() { printf "protocol=%s\nhost=%s\nusername=x-access-token\npassword=%s\n" "${INPUT_PROTOCOL}" "${INPUT_HOSTNAME}" "${INPUT_TOKEN}"; }; f' \
+    -c 'credential.helper=!f() {
+protocol=""
+host=""
+while IFS= read -r line; do
+  case "${line}" in
+    protocol=*) protocol="${line#protocol=}" ;;
+    host=*) host="${line#host=}" ;;
+  esac
+  [ -n "${line}" ] || break
+done
+if [ "${protocol}" = "${INPUT_PROTOCOL}" ] && [ "${host}" = "${INPUT_HOSTNAME}" ]; then
+  printf "protocol=%s\nhost=%s\nusername=x-access-token\npassword=%s\n" "${INPUT_PROTOCOL}" "${INPUT_HOSTNAME}" "${INPUT_TOKEN}"
+fi
+}; f' \
     "${fetch_args[@]}" 2>&1
 else
   retry "${git}" "${fetch_args[@]}" 2>&1

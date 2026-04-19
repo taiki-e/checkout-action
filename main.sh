@@ -352,9 +352,12 @@ if [[ -n "${token}" ]]; then
   fi
 fi
 
-add_safe_directory
+# Disable template to avoid needless copy of sample hooks and reduce risk of hook injections in
+# compromised environments. This option takes precedence, so there is no need to modify environment
+# variables or configs: https://git-scm.com/docs/git-init#_template_directory
+g "${git}" init --template=''
 
-g "${git}" init
+add_safe_directory
 
 g "${git}" remote add origin "${repository_url}"
 

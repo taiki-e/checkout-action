@@ -8,7 +8,7 @@ inputs:
 
 # Note:
 # - inputs.* should be manually mapped to INPUT_* due to https://github.com/actions/runner/issues/665
-# - Use GITHUB_*/RUNNER_* instead of github.*/runner.* due to https://github.com/actions/runner/issues/2185
+# - For context containing path, use GITHUB_*/RUNNER_* instead of github.*/runner.* due to https://github.com/actions/runner/issues/2185
 runs:
   using: composite
   steps:
@@ -65,6 +65,11 @@ runs:
       env:
         # NB: Sync with Windows case.
         INPUT_TOKEN: ${{ inputs.token }}
+        # TODO: support in input options
+        INPUT_REPOSITORY: ${{ github.repository }}
+        INPUT_SERVER_URL: ${{ github.server_url }}
+        INPUT_SHA: ${{ github.sha }}
+        INPUT_REF: ${{ github.ref }}
       if: runner.os != 'Windows'
     # Use pwsh and retry on bash startup failure to work around windows-11-arm runner bug:
     # https://github.com/actions/partner-runner-images/issues/169
@@ -109,4 +114,9 @@ runs:
       env:
         # NB: Sync with non-Windows case.
         INPUT_TOKEN: ${{ inputs.token }}
+        # TODO: support in input options
+        INPUT_REPOSITORY: ${{ github.repository }}
+        INPUT_SERVER_URL: ${{ github.server_url }}
+        INPUT_SHA: ${{ github.sha }}
+        INPUT_REF: ${{ github.ref }}
       if: runner.os == 'Windows'

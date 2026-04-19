@@ -122,14 +122,14 @@ export GIT_ALLOW_PROTOCOL=https:ssh
 unset GIT_SSL_NO_VERIFY
 
 if [[ -n "${token}" ]]; then
-  protocol="${GITHUB_SERVER_URL%%://*}"
-  hostname="${GITHUB_SERVER_URL#*://}"
+  protocol="${INPUT_SERVER_URL%%://*}"
+  hostname="${INPUT_SERVER_URL#*://}"
   hostname="${hostname%%/*}"
   # Sanitize inputs and runner-provided environment variables for here-doc.
   # Also checks encoded newline (%0a) and carriage return (\r, %0d) for old git affected by CVE-2020-5260/CVE-2024-52006.
   for c in $'\n' '%0a' '%0A' $'\r' '%0d' '%0D'; do
     if [[ "${protocol}" == *"${c}"* ]] || [[ "${hostname}" == *"${c}"* ]] || [[ "${token}" == *"${c}"* ]]; then
-      bail "GITHUB_SERVER_URL and 'token' input option must not contain newline"
+      bail "github.server_url and 'token' input option must not contain newline"
     fi
   done
 fi
@@ -353,14 +353,14 @@ fetch_args=(
 checkout_args=()
 fetch_args+=(fetch --no-tags --prune --no-recurse-submodules --depth=1 origin)
 checkout_args+=(checkout --force)
-if [[ "${GITHUB_REF}" == "refs/heads/"* ]]; then
-  branch="${GITHUB_REF#refs/heads/}"
+if [[ "${INPUT_REF}" == "refs/heads/"* ]]; then
+  branch="${INPUT_REF#refs/heads/}"
   remote_ref="refs/remotes/origin/${branch}"
-  fetch_args+=("+${GITHUB_SHA}:${remote_ref}")
+  fetch_args+=("+${INPUT_SHA}:${remote_ref}")
   checkout_args+=(-B "${branch}" "${remote_ref}")
 else
-  fetch_args+=("+${GITHUB_SHA}:${GITHUB_REF}")
-  checkout_args+=("${GITHUB_REF}")
+  fetch_args+=("+${INPUT_SHA}:${INPUT_REF}")
+  checkout_args+=("${INPUT_REF}")
 fi
 
 IFS=' '

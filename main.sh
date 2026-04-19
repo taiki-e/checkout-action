@@ -114,6 +114,19 @@ unset INPUT_TOKEN
 # This prevents tokens from being exposed to log when tracing is activated.
 unset GIT_TRACE_REDACT GIT_CURL_VERBOSE GIT_TRACE_CURL
 
+if [[ -n "${token}" ]]; then
+  protocol="${GITHUB_SERVER_URL%%://*}"
+  hostname="${GITHUB_SERVER_URL#*://}"
+  hostname="${hostname%%/*}"
+  # Sanitize inputs and runner-provided environment variables for here-doc.
+  # Also checks encoded newline (%0a) and carriage return (\r, %0d) for old git affected by CVE-2020-5260/CVE-2024-52006.
+  for c in $'\n' '%0a' '%0A' $'\r' '%0d' '%0D'; do
+    if [[ "${protocol}" == *"${c}"* ]] || [[ "${hostname}" == *"${c}"* ]] || [[ "${token}" == *"${c}"* ]]; then
+      bail "GITHUB_SERVER_URL and 'token' input option must not contain newline"
+    fi
+  done
+fi
+
 uname=$(resolve_path uname)
 if [[ -z "${uname}" ]]; then
   uname=$(type -P uname)
@@ -325,19 +338,6 @@ g "${git}" init
 g "${git}" remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
 
 g "${git}" config --local gc.auto 0
-
-if [[ -n "${token}" ]]; then
-  protocol="${GITHUB_SERVER_URL%%://*}"
-  hostname="${GITHUB_SERVER_URL#*://}"
-  hostname="${hostname%%/*}"
-  # Sanitize inputs and runner-provided environment variables for here-doc.
-  # Also checks encoded newline (%0a) and carriage return (\r, %0d) for old git affected by CVE-2020-5260/CVE-2024-52006.
-  for c in $'\n' '%0a' '%0A' $'\r' '%0d' '%0D'; do
-    if [[ "${protocol}" == *"${c}"* ]] || [[ "${hostname}" == *"${c}"* ]] || [[ "${token}" == *"${c}"* ]]; then
-      bail "GITHUB_SERVER_URL and 'token' input option must not contain newline"
-    fi
-  done
-fi
 
 fetch_args=(--no-tags --prune --no-recurse-submodules --depth=1 origin)
 checkout_args=(--force)

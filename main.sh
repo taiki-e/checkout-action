@@ -24,7 +24,7 @@ retry() {
     if "$@"; then
       return 0
     else
-      sleep "${i}"
+      "${sleep}" "${i}"
     fi
   done
   "$@"
@@ -94,6 +94,13 @@ sys_install() {
     openwrt) opkg_install "$@" ;;
   esac
 }
+resolve_path() {
+  if [[ -x /bin/"$1" ]]; then
+    printf '/bin/%s\n' "$1"
+  elif [[ -x /usr/bin/"$1" ]]; then
+    printf '/usr/bin/%s\n' "$1"
+  fi
+}
 
 if [[ $# -gt 0 ]]; then
   bail "invalid argument '$1'"
@@ -107,11 +114,50 @@ unset INPUT_TOKEN
 # This prevents tokens from being exposed to log when tracing is activated.
 unset GIT_TRACE_REDACT GIT_CURL_VERBOSE GIT_TRACE_CURL
 
+uname=$(resolve_path uname)
+if [[ -z "${uname}" ]]; then
+  uname=$(type -P uname)
+  if [[ -n "${token}" ]]; then
+    bail "uname is unavailable at standard location; found ${uname}"
+  else
+    warn "uname is unavailable at standard location; using ${uname}"
+  fi
+fi
+sleep=$(resolve_path sleep)
+if [[ -z "${sleep}" ]]; then
+  sleep=$(type -P sleep)
+  if [[ -n "${token}" ]]; then
+    bail "sleep is unavailable at standard location; found ${sleep}"
+  else
+    warn "sleep is unavailable at standard location; using ${sleep}"
+  fi
+fi
 base_distro=''
-case "$(uname -s)" in
+case "$("${uname}" -s)" in
   Linux)
     host_os=linux
-    g_for_hw_info lscpu
+    grep=$(resolve_path grep)
+    if [[ -z "${grep}" ]]; then
+      grep=$(type -P grep)
+      if [[ -n "${token}" ]]; then
+        bail "grep is unavailable at standard location; found ${grep}"
+      else
+        warn "grep is unavailable at standard location; using ${grep}"
+      fi
+    fi
+    cut=$(resolve_path cut)
+    if [[ -z "${cut}" ]]; then
+      cut=$(type -P cut)
+      if [[ -n "${token}" ]]; then
+        bail "cut is unavailable at standard location; found ${cut}"
+      else
+        warn "cut is unavailable at standard location; using ${cut}"
+      fi
+    fi
+    lscpu=$(resolve_path lscpu)
+    if [[ -n "${lscpu}" ]]; then
+      g_for_hw_info "${lscpu}"
+    fi
     if [[ -e /etc/redhat-release ]]; then
       # /etc/os-release is available on RHEL/CentOS 7+
       base_distro=fedora
@@ -119,8 +165,8 @@ case "$(uname -s)" in
       # /etc/os-release is available on Debian 7+
       base_distro=debian
     elif [[ -e /etc/os-release ]]; then
-      if grep -Eq '^ID_LIKE=' /etc/os-release; then
-        base_distro=$(grep -E '^ID_LIKE=' /etc/os-release | cut -d= -f2)
+      if "${grep}" -Eq '^ID_LIKE=' /etc/os-release; then
+        base_distro=$("${grep}" -E '^ID_LIKE=' /etc/os-release | "${cut}" -d= -f2)
         case "${base_distro}" in
           *debian*) base_distro=debian ;;
           *fedora*) base_distro=fedora ;;
@@ -130,7 +176,7 @@ case "$(uname -s)" in
           *openwrt*) base_distro=openwrt ;;
         esac
       else
-        base_distro=$(grep -E '^ID=' /etc/os-release | cut -d= -f2)
+        base_distro=$("${grep}" -E '^ID=' /etc/os-release | "${cut}" -d= -f2)
       fi
       base_distro="${base_distro//\"/}"
     fi
@@ -151,23 +197,96 @@ case "$(uname -s)" in
         fi
         ;;
     esac
+    if ! type -P git >/dev/null; then
+      case "${base_distro}" in
+        debian | fedora | suse | arch | alpine | openwrt)
+          printf '::group::Install packages required for checkout (git)\n'
+          case "${base_distro}" in
+            debian) sys_install ca-certificates git ;;
+            openwrt) sys_install git git-http ;;
+            *) sys_install git ;;
+          esac
+          printf '::endgroup::\n'
+          ;;
+        *) warn "checkout-action requires git on non-Debian/Fedora/SUSE/Arch/Alpine/OpenWrt-based Linux" ;;
+      esac
+    fi
+    git=$(resolve_path git)
+    if [[ -z "${git}" ]]; then
+      git=$(type -P git)
+      if [[ -n "${token}" ]]; then
+        bail "git is unavailable at standard location; found ${git}"
+      else
+        warn "git is unavailable at standard location; using ${git}"
+      fi
+    fi
     ;;
   Darwin)
     host_os=macos
-    g_for_hw_info sysctl hw.optional machdep.cpu
+    g_for_hw_info /usr/sbin/sysctl hw.optional machdep.cpu
+    if ! type -P git >/dev/null; then
+      warn "checkout-action requires git on macOS"
+    fi
+    git=$(resolve_path git)
+    if [[ -z "${git}" ]]; then
+      git=$(type -P git)
+      if [[ -n "${token}" ]]; then
+        bail "git is unavailable at standard location; found ${git}"
+      else
+        warn "git is unavailable at standard location; using ${git}"
+      fi
+    fi
     ;;
   MINGW* | MSYS* | CYGWIN* | Windows_NT)
     host_os=windows
-    g_for_hw_info systeminfo
+    g_for_hw_info 'C:\Windows\system32\systeminfo.exe'
+    if ! type -P git >/dev/null; then
+      warn "checkout-action requires git on Windows"
+    fi
+    git=$(type -P git)
+    case "${git}" in
+      /mingw64/bin/git) ;;                        # x86_64 runner default
+      /clangarm64/bin/git) ;;                     # aarch64 runner default
+      '/c/Program Files/Git/bin/git') ;;          # msys64
+      '/cygdrive/c/Program Files/Git/bin/git') ;; # cygwin
+      *)
+        if [[ -x /mingw64/bin/git ]]; then
+          git=/mingw64/bin/git
+        elif [[ -x /clangarm64/bin/git ]]; then
+          git=/clangarm64/bin/git
+        elif [[ -x '/c/Program Files/Git/bin/git' ]]; then
+          git='/c/Program Files/Git/bin/git'
+        elif [[ -x /clangarm64/bin/git ]]; then
+          git='/cygdrive/c/Program Files/Git/bin/git'
+        elif [[ -x 'C:\Program Files\Git\bin\git.exe' ]]; then
+          git='C:\Program Files\Git\bin\git.exe'
+        else
+          if [[ -n "${token}" ]]; then
+            bail "git is unavailable at standard location; found ${git}"
+          else
+            warn "git is unavailable at standard location; using ${git}"
+          fi
+        fi
+        ;;
+    esac
     ;;
-  *) bail "unrecognized OS type '$(uname -s)'" ;;
+  *) bail "unrecognized OS type '$("${uname}" -s)'" ;;
 esac
 
 home="${HOME:-}"
 wd=$(pwd)
 if [[ -z "${home}" ]]; then
+  realpath=$(resolve_path realpath)
+  if [[ -z "${realpath}" ]]; then
+    realpath=$(type -P realpath)
+    if [[ -n "${token}" ]]; then
+      bail "realpath is unavailable at standard location; found ${realpath}"
+    else
+      warn "realpath is unavailable at standard location; using ${realpath}"
+    fi
+  fi
   # https://github.com/IBM/actionspz/issues/30
-  home=$(realpath ~)
+  home=$("${realpath}" ~)
   export HOME="${home}"
 fi
 is_fake_home=''
@@ -191,46 +310,24 @@ add_safe_directory() {
   # error: could not lock config file C:/tools/cygwin/home/runneradmin/.gitconfig: No such file or directory
   # error: could not lock config file C:/msys64/home/runneradmin/.gitconfig: No such file or directory
   if [[ -n "${is_fake_home}" ]]; then
-    g git config --global --add safe.directory "${wd}" || true
+    g "${git}" config --global --add safe.directory "${wd}" || true
   else
-    g git config --global --add safe.directory "${wd}"
+    g "${git}" config --global --add safe.directory "${wd}"
   fi
 }
 
-if ! type -P git >/dev/null; then
-  case "${host_os}" in
-    linux*)
-      case "${base_distro}" in
-        debian | fedora | suse | arch | alpine | openwrt)
-          printf '::group::Install packages required for checkout (git)\n'
-          case "${base_distro}" in
-            debian) sys_install ca-certificates git ;;
-            openwrt) sys_install git git-http ;;
-            *) sys_install git ;;
-          esac
-          printf '::endgroup::\n'
-          ;;
-        *) warn "checkout-action requires git on non-Debian/Fedora/SUSE/Arch/Alpine/OpenWrt-based Linux" ;;
-      esac
-      ;;
-    macos) warn "checkout-action requires git on macOS" ;;
-    windows) warn "checkout-action requires git on Windows" ;;
-    *) bail "unsupported host OS '${host_os}'" ;;
-  esac
-fi
-
-g git version
+g "${git}" version
 
 add_safe_directory
 
-g git init
+g "${git}" init
 
-g git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
+g "${git}" remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
 
-g git config --local gc.auto 0
+g "${git}" config --local gc.auto 0
 
 if [[ -n "${token}" ]]; then
-  prev_credential_helper=$(git config get --local credential.helper || true)
+  prev_credential_helper=$("${git}" config get --local credential.helper || true)
   if [[ -n "${prev_credential_helper}" ]]; then
     bail "credential helper is already set (${prev_credential_helper}); this should not happen in clean checkout"
   fi
@@ -245,9 +342,9 @@ if [[ -n "${token}" ]]; then
     fi
   done
   # Do not use `git config --local credential.helper cache` because it inherits global credential helpers.
-  g git config --local credential.helper ""
-  g git config --local --add credential.helper cache
-  git credential approve <<EOF
+  g "${git}" config --local credential.helper ""
+  g "${git}" config --local --add credential.helper cache
+  "${git}" credential approve <<EOF
 protocol=${protocol}
 host=${hostname}
 username=${GITHUB_ACTOR}
@@ -256,17 +353,17 @@ EOF
   # Remove credential helper config on exit.
   # --replace-all is needed to avoid "warning: credential.helper has multiple values" on unset.
   # On bash (at least on 3.2+), trap EXIT catches all exiting signals other than SIGKILL, and no way to trap SIGKILL.
-  trap -- 'g git credential-cache exit; g git config --local --replace-all credential.helper ""; g git config --local --unset credential.helper' EXIT
+  trap -- 'g "${git}" credential-cache exit; g "${git}" config --local --replace-all credential.helper ""; g "${git}" config --local --unset credential.helper' EXIT
 fi
 
 if [[ "${GITHUB_REF}" == "refs/heads/"* ]]; then
   branch="${GITHUB_REF#refs/heads/}"
   remote_ref="refs/remotes/origin/${branch}"
-  g retry git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin "+${GITHUB_SHA}:${remote_ref}"
-  g retry git checkout --force -B "${branch}" "${remote_ref}"
+  g retry "${git}" fetch --no-tags --prune --no-recurse-submodules --depth=1 origin "+${GITHUB_SHA}:${remote_ref}"
+  g retry "${git}" checkout --force -B "${branch}" "${remote_ref}"
 else
-  g retry git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin "+${GITHUB_SHA}:${GITHUB_REF}"
-  g retry git checkout --force "${GITHUB_REF}"
+  g retry "${git}" fetch --no-tags --prune --no-recurse-submodules --depth=1 origin "+${GITHUB_SHA}:${GITHUB_REF}"
+  g retry "${git}" checkout --force "${GITHUB_REF}"
 fi
 
 add_safe_directory

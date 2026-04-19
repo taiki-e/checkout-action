@@ -344,6 +344,13 @@ add_safe_directory() {
 }
 
 g "${git}" version
+if [[ -n "${token}" ]]; then
+  git_version=$("${git}" version)
+  # Setting empty value via -c requires git 2.0.
+  if [[ "${git_version}" == 'git version 1.'* ]]; then
+    warn "'token' input option requires git 2.0+"
+  fi
+fi
 
 add_safe_directory
 

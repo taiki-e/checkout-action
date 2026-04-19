@@ -9,6 +9,7 @@ on:
     branches:
       - main
       - dev
+      - busybox
   schedule:
     - cron: '0 0 * * *'
   workflow_dispatch:
@@ -73,7 +74,7 @@ jobs:
           printf '%s\n' 'C:\tools\cygwin\usr\bin' >>"${GITHUB_PATH}"
         if: matrix.bash == 'cygwin'
       # TODO: use the current branch instead of @main
-      - uses: taiki-e/checkout-action@main # zizmor: ignore[unpinned-uses] # For test.
+      - uses: taiki-e/checkout-action@busybox # zizmor: ignore[unpinned-uses] # For test.
       - run: git ls-files
       - run: test -f ./tools/tidy.sh
       - run: ./tools/tidy.sh
@@ -185,7 +186,7 @@ jobs:
           CONTAINER: ${{ matrix.container }}
         if: startsWith(matrix.container, 'centos')
       # TODO: use the current branch instead of @main
-      - uses: taiki-e/checkout-action@main # zizmor: ignore[unpinned-uses] # For test.
+      - uses: taiki-e/checkout-action@busybox # zizmor: ignore[unpinned-uses] # For test.
       - run: git ls-files
         shell: sh
       - run: test -f ./tools/tidy.sh

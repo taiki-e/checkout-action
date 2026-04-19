@@ -14,6 +14,10 @@ runs:
   steps:
     - run: |
         set -eu
+        if env | grep -Eq '^BASH_FUNC_'; then
+          printf '::error::bash function injection via BASH_FUNC_ environment variable is not allowed for security reasons\n'
+          exit 1
+        fi
         if ! command -v bash >/dev/null; then
           if grep -Eq '^ID=alpine' /etc/os-release; then
             printf '::group::Install packages required for checkout-action (bash)\n'
@@ -54,6 +58,10 @@ runs:
     # https://github.com/actions/partner-runner-images/issues/169
     - run: |
         Set-StrictMode -Version Latest
+        if (Test-Path "Env:BASH_FUNC_*") {
+          Write-Output "::error::bash function injection via BASH_FUNC_ environment variable is not allowed for security reasons"
+          exit 1
+        }
         for ($i=1; $i -le 10; $i++) {
           $prev_err_action = $ErrorActionPreference
           $ErrorActionPreference = "Continue"

@@ -34,7 +34,7 @@ workdir=$(pwd)
 tmp=$(mktemp -d)
 trap -- 'rm -rf -- "${tmp:?}"' EXIT
 mkdir -p -- "${tmp}"/{pwsh-cache,pwsh-local,zizmor-cache,dummy-dir,tmp}
-touch -- "${tmp}"/dummy
+printf '' >"${tmp}"/dummy
 code=0
 color=''
 if [[ -t 1 ]] || [[ -n "${GITHUB_ACTIONS:-}" ]]; then

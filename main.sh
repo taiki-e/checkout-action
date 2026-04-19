@@ -106,6 +106,8 @@ if [[ $# -gt 0 ]]; then
   bail "invalid argument '$1'"
 fi
 
+repository_url="${INPUT_SERVER_URL}/${INPUT_REPOSITORY}"
+
 token="${INPUT_TOKEN}"
 # This prevents tokens from being exposed to subprocesses via environment variables.
 # Note that this does not prevent token leaks via reading `/proc/*/environ` on Linux or
@@ -113,6 +115,11 @@ token="${INPUT_TOKEN}"
 unset INPUT_TOKEN
 # This prevents tokens from being exposed to log when tracing is activated.
 unset GIT_TRACE_REDACT GIT_CURL_VERBOSE GIT_TRACE_CURL
+
+# Since we currently do not support checking out other repositories, this should always be enforced.
+# https://github.blog/security/application-security/improving-git-protocol-security-github/
+export GIT_ALLOW_PROTOCOL=https:ssh
+unset GIT_SSL_NO_VERIFY
 
 if [[ -n "${token}" ]]; then
   protocol="${GITHUB_SERVER_URL%%://*}"
@@ -335,12 +342,17 @@ add_safe_directory
 
 g "${git}" init
 
-g "${git}" remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
+g "${git}" remote add origin "${repository_url}"
 
 g "${git}" config --local gc.auto 0
 
-fetch_args=(--no-tags --prune --no-recurse-submodules --depth=1 origin)
-checkout_args=(--force)
+fetch_args=(
+  -c "http.${repository_url}.sslVerify=true"
+  -c "https.${repository_url}.sslVerify=true"
+)
+checkout_args=()
+fetch_args+=(fetch --no-tags --prune --no-recurse-submodules --depth=1 origin)
+checkout_args+=(checkout --force)
 if [[ "${GITHUB_REF}" == "refs/heads/"* ]]; then
   branch="${GITHUB_REF#refs/heads/}"
   remote_ref="refs/remotes/origin/${branch}"
@@ -352,7 +364,7 @@ else
 fi
 
 IFS=' '
-cmd="${git} fetch ${fetch_args[*]}"
+cmd="${git} ${fetch_args[*]}"
 IFS=$'\n\t'
 printf '::group::%s\n' "${cmd}"
 if [[ -n "${token}" ]]; then
@@ -363,12 +375,12 @@ if [[ -n "${token}" ]]; then
     retry "${git}" \
     -c 'credential.helper=' \
     -c 'credential.helper=!f() { printf "protocol=%s\nhost=%s\nusername=x-access-token\npassword=%s\n" "${INPUT_PROTOCOL}" "${INPUT_HOSTNAME}" "${INPUT_TOKEN}"; }; f' \
-    fetch "${fetch_args[@]}" 2>&1
+    "${fetch_args[@]}" 2>&1
 else
-  retry "${git}" fetch "${fetch_args[@]}" 2>&1
+  retry "${git}" "${fetch_args[@]}" 2>&1
 fi
 printf '::endgroup::\n'
 
-g retry "${git}" checkout "${checkout_args[@]}"
+g retry "${git}" "${checkout_args[@]}"
 
 add_safe_directory

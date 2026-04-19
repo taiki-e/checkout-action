@@ -91,7 +91,14 @@ sys_install() {
     suse) zypper_install "$@" ;;
     arch) pacman_install "$@" ;;
     alpine) apk_install "$@" ;;
-    openwrt) opkg_install "$@" ;;
+    openwrt)
+      # https://forum.openwrt.org/t/the-future-is-now-opkg-vs-apk/201164
+      if type -P apk >/dev/null; then
+        apk_install "$@"
+      else
+        opkg_install "$@"
+      fi
+      ;;
   esac
 }
 resolve_path() {

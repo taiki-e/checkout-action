@@ -79,24 +79,24 @@ jobs:
       - run: ./tools/tidy.sh
         if: startsWith(matrix.os, 'ubuntu') && matrix.os != 'ubuntu-slim'
   # For comparison
-  actions-checkout:
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-      - run: git ls-files
-      - run: test -f ./tools/tidy.sh
-      - run: ./tools/tidy.sh
-        if: startsWith(matrix.os, 'ubuntu')
+  # actions-checkout:
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os:
+  #         - ubuntu-latest
+  #         - macos-latest
+  #         - windows-latest
+  #   runs-on: ${{ matrix.os }}
+  #   timeout-minutes: 60
+  #   steps:
+  #     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+  #       with:
+  #         persist-credentials: false
+  #     - run: git ls-files
+  #     - run: test -f ./tools/tidy.sh
+  #     - run: ./tools/tidy.sh
+  #       if: startsWith(matrix.os, 'ubuntu')
 
   test-container:
     strategy:
@@ -130,19 +130,30 @@ jobs:
           - opensuse/tumbleweed:latest # glibc 2.39 (as of 2024-07-19)
           - archlinux:latest # glibc 2.39 (as of 2024-07-19)
           - alpine:3.2 # musl 1.1.11
-          - alpine:3.14 # musl 1.2.2
-          - alpine:3.15 # musl 1.2.2
-          - alpine:3.16 # musl 1.2.3
-          - alpine:3.17 # musl 1.2.3
-          - alpine:3.18 # musl 1.2.4
-          - alpine:3.19 # musl 1.2.4
+          # Skip intermediate versions that have reached EOL by default.
+          # - alpine:3.3 # musl 1.1.12
+          # - alpine:3.4 # musl 1.1.14
+          # - alpine:3.5 # musl 1.1.15
+          # - alpine:3.6 # musl 1.1.16
+          # - alpine:3.7 # musl 1.1.18
+          # - alpine:3.8 # musl 1.1.19
+          # - alpine:3.9 # musl 1.1.20
+          # - alpine:3.10 # musl 1.1.22
+          # - alpine:3.11 # musl 1.1.24
+          # - alpine:3.12 # musl 1.1.24
+          # - alpine:3.13 # musl 1.2.2
+          # - alpine:3.14 # musl 1.2.2
+          # - alpine:3.15 # musl 1.2.2
+          # - alpine:3.16 # musl 1.2.3
+          # - alpine:3.17 # musl 1.2.3
+          # - alpine:3.18 # musl 1.2.4
+          # - alpine:3.19 # musl 1.2.4
           - alpine:3.20 # musl 1.2.5
           - alpine:3.21 # musl 1.2.5
           - alpine:3.22 # musl 1.2.5
           - alpine:3.23 # musl 1.2.5
-          # TODO: opkg doesn't work since https://github.com/openwrt/openwrt/issues/16935#issuecomment-2472747379
-          # but apk is not installed in the 23.05/24.10 container: "apk: not found"
-          # - openwrt/rootfs:x86-64-openwrt-24.10 # musl 1.2.5
+          - openwrt/rootfs:x86_64-24.10.6 # musl 1.2.5, opkg
+          - openwrt/rootfs:x86_64 # musl 1.2.5 (as of 25.12), apk
     runs-on: ubuntu-latest
     timeout-minutes: 60
     container: ${{ matrix.container }}

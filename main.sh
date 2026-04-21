@@ -36,71 +36,6 @@ bail() {
 warn() {
   printf '::warning::%s\n' "$*"
 }
-_sudo() {
-  if type -P sudo >/dev/null; then
-    sudo "$@"
-  else
-    "$@"
-  fi
-}
-apt_update() {
-  retry _sudo apt-get -o Acquire::Retries=10 -qq update
-  apt_updated=1
-}
-apt_install() {
-  if [[ -z "${apt_updated:-}" ]]; then
-    apt_update
-  fi
-  retry _sudo apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends "$@"
-}
-dnf_install() {
-  retry _sudo "${dnf}" install -y "$@"
-}
-zypper_install() {
-  retry _sudo zypper install -y "$@"
-}
-pacman_install() {
-  retry _sudo pacman -Sy --noconfirm "$@"
-}
-# NB: sync with action.yml
-apk_install() {
-  if type -P sudo >/dev/null; then
-    retry sudo apk --no-cache add "$@"
-  elif type -P doas >/dev/null; then
-    retry doas apk --no-cache add "$@"
-  else
-    retry apk --no-cache add "$@"
-  fi
-}
-# NB: sync with action.yml
-opkg_update() {
-  _sudo mkdir -p -- /var/lock
-  retry _sudo opkg update
-  opkg_updated=1
-}
-opkg_install() {
-  if [[ -z "${opkg_updated:-}" ]]; then
-    opkg_update
-  fi
-  retry _sudo opkg install "$@"
-}
-sys_install() {
-  case "${base_distro}" in
-    debian) apt_install "$@" ;;
-    fedora) dnf_install "$@" ;;
-    suse) zypper_install "$@" ;;
-    arch) pacman_install "$@" ;;
-    alpine) apk_install "$@" ;;
-    openwrt)
-      # https://forum.openwrt.org/t/the-future-is-now-opkg-vs-apk/201164
-      if type -P apk >/dev/null; then
-        apk_install "$@"
-      else
-        opkg_install "$@"
-      fi
-      ;;
-  esac
-}
 resolve_path() {
   if [[ -x /bin/"$1" ]]; then
     printf '/bin/%s\n' "$1"
@@ -208,25 +143,99 @@ case "$("${uname}" -s)" in
       base_distro="${base_distro//\"/}"
     fi
     case "${base_distro}" in
+      debian)
+        apt_updated=''
+        apt_update() {
+          retry _sudo /usr/bin/apt-get -o Acquire::Retries=10 -qq update
+          apt_updated=1
+        }
+        sys_install() {
+          if [[ -z "${apt_updated:-}" ]]; then
+            apt_update
+          fi
+          retry _sudo /usr/bin/apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends "$@"
+        }
+        ;;
       fedora)
-        dnf=dnf
-        if ! type -P dnf >/dev/null; then
-          if type -P microdnf >/dev/null; then
+        dnf=/usr/bin/dnf
+        if ! type -P /usr/bin/dnf >/dev/null; then
+          if type -P /usr/bin/microdnf >/dev/null; then
             # fedora-based distributions have "minimal" images that
             # use microdnf instead of dnf.
-            dnf=microdnf
+            dnf=/usr/bin/microdnf
           else
             # If neither dnf nor microdnf is available, it is
             # probably an RHEL7-based distribution that does not
             # have dnf installed by default.
-            dnf=yum
+            dnf=/usr/bin/yum
           fi
+        fi
+        sys_install() {
+          retry _sudo "${dnf}" install -y "$@"
+        }
+        ;;
+      suse)
+        sys_install() {
+          retry _sudo /usr/bin/zypper install -y "$@"
+        }
+        ;;
+      arch)
+        sys_install() {
+          retry _sudo /usr/bin/pacman -Sy --noconfirm "$@"
+        }
+        ;;
+      alpine)
+        # NB: sync with action.yml
+        sys_install() {
+          if type -P /usr/bin/sudo >/dev/null; then
+            retry /usr/bin/sudo /sbin/apk --no-cache add "$@"
+          elif type -P /usr/bin/doas >/dev/null; then
+            retry /usr/bin/doas /sbin/apk --no-cache add "$@"
+          else
+            retry /sbin/apk --no-cache add "$@"
+          fi
+        }
+        ;;
+      openwrt)
+        # NB: sync with action.yml
+        # https://forum.openwrt.org/t/the-future-is-now-opkg-vs-apk/201164
+        if [[ -x /usr/bin/apk ]]; then
+          sys_install() {
+            retry _sudo /usr/bin/apk --no-cache add "$@"
+          }
+        else
+          opkg_updated=''
+          opkg_update() {
+            _sudo /bin/mkdir -p -- /var/lock
+            retry _sudo /bin/opkg update
+            opkg_updated=1
+          }
+          sys_install() {
+            if [[ -z "${opkg_updated:-}" ]]; then
+              opkg_update
+            fi
+            retry _sudo /bin/opkg install "$@"
+          }
         fi
         ;;
     esac
     if ! type -P git >/dev/null; then
       case "${base_distro}" in
         debian | fedora | suse | arch | alpine | openwrt)
+          sudo=$(resolve_path sudo)
+          if [[ -z "${sudo}" ]]; then
+            sudo=$(type -P sudo || true)
+            if [[ -n "${sudo}" ]]; then
+              bail "sudo is unavailable at standard location; found ${sudo}"
+            fi
+          fi
+          _sudo() {
+            if [[ -n "${sudo}" ]]; then
+              "${sudo}" "$@"
+            else
+              "$@"
+            fi
+          }
           printf '::group::Install packages required for checkout (git)\n'
           case "${base_distro}" in
             debian) sys_install ca-certificates git ;;

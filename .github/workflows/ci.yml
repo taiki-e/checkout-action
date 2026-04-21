@@ -110,14 +110,14 @@ jobs:
           - ubuntu:22.04 # glibc 2.35, git 2.34
           - ubuntu:24.04 # glibc 2.39, git 2.43
           - ubuntu:26.04 # glibc 2.42, git 2.53
-          - ubuntu:rolling
+          - ubuntu:rolling # glibc
           - debian:9-slim # glibc 2.24, git 2.11, EoL, end of LTS
           - debian:10-slim # glibc 2.28, git 2.20, EoL, end of LTS
           - debian:11-slim # glibc 2.31, git 2.30, EoL
           - debian:12-slim # glibc 2.36, git 2.39
           - debian:13-slim # glibc 2.41, git 2.47
-          - debian:testing
-          - fedora:latest
+          - debian:testing # glibc
+          - fedora:latest # glibc
           - almalinux:8 # glibc 2.28, git 2.43
           - almalinux:8-minimal # glibc 2.28, git 2.43
           - almalinux:9 # glibc 2.34, git 2.47
@@ -126,9 +126,17 @@ jobs:
           - almalinux:10-minimal # glibc 2.39, git 2.47
           - centos:6 # glibc 2.12, git 1.7, EoL
           - centos:7 # glibc 2.17, git 1.8, EoL
-          - opensuse/leap:latest
-          - opensuse/tumbleweed:latest
-          - archlinux:latest
+          - opensuse/leap:15.0 # glibc 2.26, git 2.16, EoL
+          # Skip intermediate versions that have reached EoL by default.
+          # - opensuse/leap:15.1 # glibc 2.26, git 2.26, EoL
+          # - opensuse/leap:15.2 # glibc 2.26, git 2.26, EoL
+          # - opensuse/leap:15.3 # glibc 2.31, git 2.35, EoL
+          # - opensuse/leap:15.4 # glibc 2.31, git 2.35, EoL
+          # - opensuse/leap:15.5 # glibc 2.31, git 2.35, EoL
+          - opensuse/leap:15.6 # glibc 2.38, git 2.51
+          - opensuse/leap:16.0 # glibc 2.40, git 2.51
+          - opensuse/tumbleweed:latest # glibc
+          - archlinux:latest # glibc
           - alpine:3.2 # musl 1.1.11, git 2.4, EoL
           # Skip intermediate versions that have reached EoL by default.
           # - alpine:3.3 # musl 1.1.12, git 2.8, EoL
@@ -152,8 +160,9 @@ jobs:
           - alpine:3.21 # musl 1.2.5, git 2.47
           - alpine:3.22 # musl 1.2.5, git 2.49
           - alpine:3.23 # musl 1.2.5, git 2.52
+          - openwrt/rootfs:x86_64-23.05.6 # musl 1.2.4, git 2.43, opkg, EoL
           - openwrt/rootfs:x86_64-24.10.6 # musl 1.2.5, git 2.50, opkg
-          - openwrt/rootfs:x86_64 # apk
+          - openwrt/rootfs:x86_64 # musl, apk
     runs-on: ubuntu-latest
     timeout-minutes: 60
     container: ${{ matrix.container }}
@@ -195,6 +204,31 @@ jobs:
         env:
           CONTAINER: ${{ matrix.container }}
         if: startsWith(matrix.container, 'centos')
+      # For test
+      # - run: /usr/bin/apt-get -o Acquire::Retries=10 -qq update && /usr/bin/apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends sudo
+      #   if: startsWith(matrix.container, 'debian') || startsWith(matrix.container, 'ubuntu')
+      # - run: /usr/bin/dnf install -y sudo
+      #   if: startsWith(matrix.container, 'fedora') || (startsWith(matrix.container, 'almalinux') && !endsWith(matrix.container, '-minimal'))
+      # - run: /usr/bin/microdnf install -y sudo
+      #   if: startsWith(matrix.container, 'almalinux') && endsWith(matrix.container, '-minimal')
+      # - run: /usr/bin/yum install -y sudo
+      #   if: startsWith(matrix.container, 'centos')
+      # - run: /usr/bin/zypper install -y sudo
+      #   if: startsWith(matrix.container, 'opensuse')
+      # - run: /usr/bin/pacman -Sy --noconfirm sudo
+      #   if: startsWith(matrix.container, 'archlinux')
+      # - run: /sbin/apk --no-cache add sudo
+      #   shell: sh
+      #   if: startsWith(matrix.container, 'alpine')
+      # - run: /usr/bin/apk --no-cache add sudo
+      #   shell: sh
+      #   if: matrix.container == 'openwrt/rootfs:x86_64'
+      # - run: |
+      #     /bin/mkdir -p -- /var/lock
+      #     /bin/opkg update
+      #     /bin/opkg install sudo
+      #   shell: sh
+      #   if: startsWith(matrix.container, 'openwrt') && matrix.container != 'openwrt/rootfs:x86_64'
       # TODO: use the current branch instead of @main
       - uses: taiki-e/checkout-action@main # zizmor: ignore[unpinned-uses] # For test.
       - run: git ls-files

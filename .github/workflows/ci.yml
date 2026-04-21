@@ -103,64 +103,64 @@ jobs:
       fail-fast: false
       matrix:
         container:
-          - ubuntu:14.04 # glibc 2.19
-          - ubuntu:16.04 # glibc 2.23
-          - ubuntu:18.04 # glibc 2.27
-          - ubuntu:20.04 # glibc 2.31
-          - ubuntu:22.04 # glibc 2.35
-          - ubuntu:24.04 # glibc 2.39
-          - ubuntu:26.04 # glibc 2.42
+          - ubuntu:14.04 # glibc 2.19, git 1.9, EoL, end of ESM
+          - ubuntu:16.04 # glibc 2.23, git 2.7, EoL, end of ESM
+          - ubuntu:18.04 # glibc 2.27, git 2.17, EoL
+          - ubuntu:20.04 # glibc 2.31, git 2.25, EoL
+          - ubuntu:22.04 # glibc 2.35, git 2.34
+          - ubuntu:24.04 # glibc 2.39, git 2.43
+          - ubuntu:26.04 # glibc 2.42, git 2.53
           - ubuntu:rolling
-          - debian:9-slim # glibc 2.24
-          - debian:10-slim # glibc 2.28
-          - debian:11-slim # glibc 2.31
-          - debian:12-slim # glibc 2.36
-          - debian:13-slim # glibc 2.41
+          - debian:9-slim # glibc 2.24, git 2.11, EoL, end of LTS
+          - debian:10-slim # glibc 2.28, git 2.20, EoL, end of LTS
+          - debian:11-slim # glibc 2.31, git 2.30, EoL
+          - debian:12-slim # glibc 2.36, git 2.39
+          - debian:13-slim # glibc 2.41, git 2.47
           - debian:testing
-          - fedora:latest # glibc 2.39 (as of fedora 40)
-          - almalinux:8 # glibc 2.28
-          - almalinux:8-minimal # glibc 2.28
-          - almalinux:9 # glibc 2.34
-          - almalinux:9-minimal # glibc 2.34
-          - almalinux:10 # glibc 2.39
-          - almalinux:10-minimal # glibc 2.39
-          - centos:6 # glibc 2.12
-          - centos:7 # glibc 2.17
-          - opensuse/leap:latest # glibc 2.38 (as of leap 15.6)
-          - opensuse/tumbleweed:latest # glibc 2.39 (as of 2024-07-19)
-          - archlinux:latest # glibc 2.39 (as of 2024-07-19)
-          - alpine:3.2 # musl 1.1.11
-          # Skip intermediate versions that have reached EOL by default.
-          # - alpine:3.3 # musl 1.1.12
-          # - alpine:3.4 # musl 1.1.14
-          # - alpine:3.5 # musl 1.1.15
-          # - alpine:3.6 # musl 1.1.16
-          # - alpine:3.7 # musl 1.1.18
-          # - alpine:3.8 # musl 1.1.19
-          # - alpine:3.9 # musl 1.1.20
-          # - alpine:3.10 # musl 1.1.22
-          # - alpine:3.11 # musl 1.1.24
-          # - alpine:3.12 # musl 1.1.24
-          # - alpine:3.13 # musl 1.2.2
-          # - alpine:3.14 # musl 1.2.2
-          # - alpine:3.15 # musl 1.2.2
-          # - alpine:3.16 # musl 1.2.3
-          # - alpine:3.17 # musl 1.2.3
-          # - alpine:3.18 # musl 1.2.4
-          # - alpine:3.19 # musl 1.2.4
-          - alpine:3.20 # musl 1.2.5
-          - alpine:3.21 # musl 1.2.5
-          - alpine:3.22 # musl 1.2.5
-          - alpine:3.23 # musl 1.2.5
-          - openwrt/rootfs:x86_64-24.10.6 # musl 1.2.5, opkg
-          - openwrt/rootfs:x86_64 # musl 1.2.5 (as of 25.12), apk
+          - fedora:latest
+          - almalinux:8 # glibc 2.28, git 2.43
+          - almalinux:8-minimal # glibc 2.28, git 2.43
+          - almalinux:9 # glibc 2.34, git 2.47
+          - almalinux:9-minimal # glibc 2.34, git 2.47
+          - almalinux:10 # glibc 2.39, git 2.47
+          - almalinux:10-minimal # glibc 2.39, git 2.47
+          - centos:6 # glibc 2.12, git 1.7, EoL
+          - centos:7 # glibc 2.17, git 1.8, EoL
+          - opensuse/leap:latest
+          - opensuse/tumbleweed:latest
+          - archlinux:latest
+          - alpine:3.2 # musl 1.1.11, git 2.4, EoL
+          # Skip intermediate versions that have reached EoL by default.
+          # - alpine:3.3 # musl 1.1.12, git 2.8, EoL
+          # - alpine:3.4 # musl 1.1.14, git 2.8, EoL
+          # - alpine:3.5 # musl 1.1.15, git 2.11, EoL
+          # - alpine:3.6 # musl 1.1.16, git 2.13, EoL, broken env command
+          # - alpine:3.7 # musl 1.1.18, git 2.15, EoL, broken env command
+          # - alpine:3.8 # musl 1.1.19, git 2.18, EoL
+          # - alpine:3.9 # musl 1.1.20, git 2.20, EoL
+          # - alpine:3.10 # musl 1.1.22, git 2.22, EoL
+          # - alpine:3.11 # musl 1.1.24, git 2.24, EoL
+          # - alpine:3.12 # musl 1.1.24, git 2.26, EoL
+          # - alpine:3.13 # musl 1.2.2, git 2.30, EoL
+          # - alpine:3.14 # musl 1.2.2, git 2.32, EoL
+          # - alpine:3.15 # musl 1.2.2, git 2.34, EoL
+          # - alpine:3.16 # musl 1.2.3, git 2.36, EoL
+          # - alpine:3.17 # musl 1.2.3, git 2.39, EoL
+          # - alpine:3.18 # musl 1.2.4, git 2.40, EoL
+          # - alpine:3.19 # musl 1.2.4, git 2.43, EoL
+          # - alpine:3.20 # musl 1.2.5, git 2.45, EoL
+          - alpine:3.21 # musl 1.2.5, git 2.47
+          - alpine:3.22 # musl 1.2.5, git 2.49
+          - alpine:3.23 # musl 1.2.5, git 2.52
+          - openwrt/rootfs:x86_64-24.10.6 # musl 1.2.5, git 2.50, opkg
+          - openwrt/rootfs:x86_64 # apk
     runs-on: ubuntu-latest
     timeout-minutes: 60
     container: ${{ matrix.container }}
     steps:
       - name: Install requirements (old debian)
         run: |
-          # In Debian, the old repositories is removed from the main mirrors some time after EoL.
+          # In Debian, the old repositories is removed from the main mirrors some time after end of LTS.
           codename=$(grep -E '^VERSION_CODENAME=' /etc/os-release | cut -d= -f2)
           sed -i /etc/apt/sources.list -e 's/deb.debian.org/archive.debian.org/g' \
             -e 's|security.debian.org|archive.debian.org/|g' \

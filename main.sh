@@ -30,11 +30,11 @@ retry() {
   "$@"
 }
 bail() {
-  printf '::error::%s\n' "$*"
+  printf '::error::checkout-action: %s\n' "$*"
   exit 1
 }
 warn() {
-  printf '::warning::%s\n' "$*"
+  printf '::warning::checkout-action: %s\n' "$*"
 }
 resolve_path() {
   if [[ -x /bin/"$1" ]]; then
@@ -45,10 +45,8 @@ resolve_path() {
 }
 
 if [[ $# -gt 0 ]]; then
-  bail "invalid argument '$1'"
+  bail "internal error: invalid argument '$1'"
 fi
-
-repository_url="${INPUT_SERVER_URL}/${INPUT_REPOSITORY}"
 
 token="${INPUT_TOKEN}"
 # This prevents tokens from being exposed to subprocesses via environment variables.
@@ -58,17 +56,18 @@ unset INPUT_TOKEN
 # This prevents tokens from being exposed to log when tracing is activated.
 unset GIT_TRACE_REDACT GIT_CURL_VERBOSE GIT_TRACE_CURL
 
+repository_url="${INPUT_SERVER_URL}/${INPUT_REPOSITORY}"
+
 # Since we currently do not support checking out other repositories, this should always be enforced.
 # https://github.blog/security/application-security/improving-git-protocol-security-github/
 export GIT_ALLOW_PROTOCOL=https:ssh
-unset GIT_SSL_NO_VERIFY
 
 if [[ -n "${HAS_TOKEN}" ]]; then
   protocol="${INPUT_SERVER_URL%%://*}"
   hostname="${INPUT_SERVER_URL#*://}"
   hostname="${hostname%%/*}"
-  # Sanitize inputs and runner-provided environment variables for here-doc.
-  # Also checks encoded newline (%0a) and carriage return (\r, %0d) for old git affected by CVE-2020-5260/CVE-2024-52006.
+  # Sanitize inputs and runner-provided environment variables for credential helper which uses line-separated format.
+  # Also sanitize encoded newline (%0a) and carriage return (\r, %0d) for old git affected by CVE-2020-5260/CVE-2024-52006.
   for c in $'\n' '%0a' '%0A' $'\r' '%0d' '%0D'; do
     if [[ "${protocol}" == *"${c}"* ]] || [[ "${hostname}" == *"${c}"* ]] || [[ "${token}" == *"${c}"* ]]; then
       bail "github.server_url and 'token' input option must not contain newline"
@@ -99,6 +98,7 @@ case "${RUNNER_OS}" in
     fi
     lscpu=$(resolve_path lscpu)
     if [[ -n "${lscpu}" ]]; then
+      # Output CPU information to make it easier to debug the runner issues.
       g_for_hw_info "${lscpu}"
     fi
     if [[ -e /etc/redhat-release ]]; then
@@ -230,7 +230,7 @@ case "${RUNNER_OS}" in
         esac
         printf '::endgroup::\n'
       else
-        warn "checkout-action requires git on non-Debian/Fedora/SUSE/Arch/Alpine/OpenWrt-based Linux"
+        warn "this action requires git on non-Debian/Fedora/SUSE/Arch/Alpine/OpenWrt-based Linux"
       fi
     fi
     git=$(resolve_path git)
@@ -244,9 +244,10 @@ case "${RUNNER_OS}" in
     fi
     ;;
   macOS)
+    # Output CPU information to make it easier to debug the runner issues.
     g_for_hw_info /usr/sbin/sysctl hw.optional machdep.cpu
     if ! type -P git >/dev/null; then
-      warn "checkout-action requires git on macOS"
+      warn "this action requires git on macOS"
     fi
     git=$(resolve_path git)
     if [[ -z "${git}" ]]; then
@@ -259,9 +260,10 @@ case "${RUNNER_OS}" in
     fi
     ;;
   Windows)
+    # Output CPU information to make it easier to debug the runner issues.
     g_for_hw_info 'C:\Windows\system32\systeminfo.exe'
     if ! type -P git >/dev/null; then
-      warn "checkout-action requires git on Windows"
+      warn "this action requires git on Windows"
     fi
     git=$(type -P git)
     case "${git}" in
@@ -328,7 +330,7 @@ if [[ -n "${HAS_TOKEN}" ]]; then
 else
   # --local and --no-recurse-submodules require git 1.8.
   if [[ "${git_version}" == 'git version 1.'* ]] && [[ "${git_version}" != 'git version 1.8.'* ]] && [[ "${git_version}" != 'git version 1.9.'* ]]; then
-    warn "checkout-action requires git 1.8+"
+    warn "this action requires git 1.8+"
   fi
 fi
 
@@ -343,6 +345,8 @@ g "${git}" remote add origin "${repository_url}"
 
 g "${git}" config --local gc.auto 0
 
+# Enforce sslVerify to ensure security of https.
+unset GIT_SSL_NO_VERIFY
 fetch_args=(
   -c "http.${repository_url}.sslVerify=true"
   -c "https.${repository_url}.sslVerify=true"
@@ -365,6 +369,7 @@ cmd="${git} ${fetch_args[*]}"
 IFS=$'\n\t'
 printf '::group::%s\n' "${cmd}"
 if [[ -n "${HAS_TOKEN}" ]]; then
+  # The first credential.helper= is needed to ignore existing credential helpers.
   # shellcheck disable=SC2016
   INPUT_PROTOCOL="${protocol}" \
     INPUT_HOSTNAME="${hostname}" \

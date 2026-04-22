@@ -1,5 +1,6 @@
 almalinux
 archlinux
+ASKPASS
 CDPATH
 clangarm
 cygdrive

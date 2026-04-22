@@ -19,7 +19,12 @@ runs:
           grep=/usr/bin/grep
         else
           grep=$(command -v grep)
-          printf '::warning::grep is unavailable at standard location; using %s\n' "${grep}"
+          if [ -n "${HAS_TOKEN}" ]; then
+            printf '::error::grep is unavailable at standard location; found %s\n' "${grep}"
+            exit 1
+          else
+            printf '::warning::grep is unavailable at standard location; using %s\n' "${grep}"
+          fi
         fi
         # If /bin/sh is dash, environment variable containing % is not imported, but is fine
         # because it also means that it will not be exposed to subprocess.
@@ -34,7 +39,12 @@ runs:
             sleep=/usr/bin/sleep
           else
             sleep=$(command -v sleep)
-            printf '::warning::sleep is unavailable at standard location; using %s\n' "${sleep}"
+            if [ -n "${HAS_TOKEN}" ]; then
+              printf '::error::sleep is unavailable at standard location; found %s\n' "${sleep}"
+              exit 1
+            else
+              printf '::warning::sleep is unavailable at standard location; using %s\n' "${sleep}"
+            fi
           fi
           retry() {
             for i in 1 2 3 4 5 6 7 8 9 10; do
@@ -87,8 +97,14 @@ runs:
         if command -v /bin/bash >/dev/null; then
           /bin/bash --noprofile --norc "${GITHUB_ACTION_PATH:?}/main.sh"
         else
-          printf '::warning::bash is unavailable at standard location; using %s\n' "$(command -v bash)"
-          bash --noprofile --norc "${GITHUB_ACTION_PATH:?}/main.sh"
+          bash=$(command -v bash)
+          if [ -n "${HAS_TOKEN}" ]; then
+            printf '::error::bash is unavailable at standard location; found %s\n' "${bash}"
+            exit 1
+          else
+            printf '::warning::bash is unavailable at standard location; using %s\n' "${bash}"
+            "${bash}" --noprofile --norc "${GITHUB_ACTION_PATH:?}/main.sh"
+          fi
         fi
       shell: /usr/bin/env -u ENV -u BASH_ENV -u CDPATH -u SHELLOPTS -u BASHOPTS /bin/sh -eu {0} # zizmor: ignore[misfeature] false positive
       env:
@@ -99,6 +115,7 @@ runs:
         INPUT_SERVER_URL: ${{ github.server_url }}
         INPUT_SHA: ${{ github.sha }}
         INPUT_REF: ${{ github.ref }}
+        HAS_TOKEN: ${{ inputs.token == '' && '' || '1' }}
       if: runner.os != 'Windows'
     # Use pwsh and retry on bash startup failure to work around windows-11-arm runner bug:
     # https://github.com/actions/partner-runner-images/issues/169
@@ -119,7 +136,12 @@ runs:
           "C:\msys64\usr\bin\bash.exe" {} # msys64
           "C:\tools\cygwin\bin\bash.exe" {} # cygwin
           default {
-            Write-Output "::warning::bash is unavailable at standard location; using $bash"
+            if ("$env:HAS_TOKEN" -ne "") {
+              Write-Output "::error::bash is unavailable at standard location; found $bash"
+              exit 1
+            } else {
+              Write-Output "::warning::bash is unavailable at standard location; using $bash"
+            }
           }
         }
         for ($i=1; $i -le 10; $i++) {
@@ -148,4 +170,5 @@ runs:
         INPUT_SERVER_URL: ${{ github.server_url }}
         INPUT_SHA: ${{ github.sha }}
         INPUT_REF: ${{ github.ref }}
+        HAS_TOKEN: ${{ inputs.token == '' && '' || '1' }}
       if: runner.os == 'Windows'

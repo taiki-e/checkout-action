@@ -63,7 +63,7 @@ unset GIT_TRACE_REDACT GIT_CURL_VERBOSE GIT_TRACE_CURL
 export GIT_ALLOW_PROTOCOL=https:ssh
 unset GIT_SSL_NO_VERIFY
 
-if [[ -n "${token}" ]]; then
+if [[ -n "${HAS_TOKEN}" ]]; then
   protocol="${INPUT_SERVER_URL%%://*}"
   hostname="${INPUT_SERVER_URL#*://}"
   hostname="${hostname%%/*}"
@@ -79,7 +79,7 @@ fi
 uname=$(resolve_path uname)
 if [[ -z "${uname}" ]]; then
   uname=$(type -P uname)
-  if [[ -n "${token}" ]]; then
+  if [[ -n "${HAS_TOKEN}" ]]; then
     bail "uname is unavailable at standard location; found ${uname}"
   else
     warn "uname is unavailable at standard location; using ${uname}"
@@ -88,7 +88,7 @@ fi
 sleep=$(resolve_path sleep)
 if [[ -z "${sleep}" ]]; then
   sleep=$(type -P sleep)
-  if [[ -n "${token}" ]]; then
+  if [[ -n "${HAS_TOKEN}" ]]; then
     bail "sleep is unavailable at standard location; found ${sleep}"
   else
     warn "sleep is unavailable at standard location; using ${sleep}"
@@ -101,7 +101,7 @@ case "$("${uname}" -s)" in
     grep=$(resolve_path grep)
     if [[ -z "${grep}" ]]; then
       grep=$(type -P grep)
-      if [[ -n "${token}" ]]; then
+      if [[ -n "${HAS_TOKEN}" ]]; then
         bail "grep is unavailable at standard location; found ${grep}"
       else
         warn "grep is unavailable at standard location; using ${grep}"
@@ -110,7 +110,7 @@ case "$("${uname}" -s)" in
     cut=$(resolve_path cut)
     if [[ -z "${cut}" ]]; then
       cut=$(type -P cut)
-      if [[ -n "${token}" ]]; then
+      if [[ -n "${HAS_TOKEN}" ]]; then
         bail "cut is unavailable at standard location; found ${cut}"
       else
         warn "cut is unavailable at standard location; using ${cut}"
@@ -250,7 +250,7 @@ case "$("${uname}" -s)" in
     git=$(resolve_path git)
     if [[ -z "${git}" ]]; then
       git=$(type -P git)
-      if [[ -n "${token}" ]]; then
+      if [[ -n "${HAS_TOKEN}" ]]; then
         bail "git is unavailable at standard location; found ${git}"
       else
         warn "git is unavailable at standard location; using ${git}"
@@ -266,7 +266,7 @@ case "$("${uname}" -s)" in
     git=$(resolve_path git)
     if [[ -z "${git}" ]]; then
       git=$(type -P git)
-      if [[ -n "${token}" ]]; then
+      if [[ -n "${HAS_TOKEN}" ]]; then
         bail "git is unavailable at standard location; found ${git}"
       else
         warn "git is unavailable at standard location; using ${git}"
@@ -297,7 +297,7 @@ case "$("${uname}" -s)" in
         elif [[ -x 'C:\Program Files\Git\bin\git.exe' ]]; then
           git='C:\Program Files\Git\bin\git.exe'
         else
-          if [[ -n "${token}" ]]; then
+          if [[ -n "${HAS_TOKEN}" ]]; then
             bail "git is unavailable at standard location; found ${git}"
           else
             warn "git is unavailable at standard location; using ${git}"
@@ -315,7 +315,7 @@ if [[ -z "${home}" ]]; then
   realpath=$(resolve_path realpath)
   if [[ -z "${realpath}" ]]; then
     realpath=$(type -P realpath)
-    if [[ -n "${token}" ]]; then
+    if [[ -n "${HAS_TOKEN}" ]]; then
       bail "realpath is unavailable at standard location; found ${realpath}"
     else
       warn "realpath is unavailable at standard location; using ${realpath}"
@@ -354,7 +354,7 @@ add_safe_directory() {
 
 g "${git}" version
 git_version=$("${git}" version)
-if [[ -n "${token}" ]]; then
+if [[ -n "${HAS_TOKEN}" ]]; then
   # Setting empty value via -c requires git 2.0.
   if [[ "${git_version}" == 'git version 1.'* ]]; then
     warn "'token' input option requires git 2.0+"
@@ -398,7 +398,7 @@ IFS=' '
 cmd="${git} ${fetch_args[*]}"
 IFS=$'\n\t'
 printf '::group::%s\n' "${cmd}"
-if [[ -n "${token}" ]]; then
+if [[ -n "${HAS_TOKEN}" ]]; then
   # shellcheck disable=SC2016
   INPUT_PROTOCOL="${protocol}" \
     INPUT_HOSTNAME="${hostname}" \

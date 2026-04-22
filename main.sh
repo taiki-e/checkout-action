@@ -76,15 +76,6 @@ if [[ -n "${HAS_TOKEN}" ]]; then
   done
 fi
 
-uname=$(resolve_path uname)
-if [[ -z "${uname}" ]]; then
-  uname=$(type -P uname)
-  if [[ -n "${HAS_TOKEN}" ]]; then
-    bail "uname is unavailable at standard location; found ${uname}"
-  else
-    warn "uname is unavailable at standard location; using ${uname}"
-  fi
-fi
 sleep=$(resolve_path sleep)
 if [[ -z "${sleep}" ]]; then
   sleep=$(type -P sleep)
@@ -94,10 +85,9 @@ if [[ -z "${sleep}" ]]; then
     warn "sleep is unavailable at standard location; using ${sleep}"
   fi
 fi
-base_distro=''
-case "$("${uname}" -s)" in
+is_fake_home=''
+case "${RUNNER_OS}" in
   Linux)
-    host_os=linux
     grep=$(resolve_path grep)
     if [[ -z "${grep}" ]]; then
       grep=$(type -P grep)
@@ -105,15 +95,6 @@ case "$("${uname}" -s)" in
         bail "grep is unavailable at standard location; found ${grep}"
       else
         warn "grep is unavailable at standard location; using ${grep}"
-      fi
-    fi
-    cut=$(resolve_path cut)
-    if [[ -z "${cut}" ]]; then
-      cut=$(type -P cut)
-      if [[ -n "${HAS_TOKEN}" ]]; then
-        bail "cut is unavailable at standard location; found ${cut}"
-      else
-        warn "cut is unavailable at standard location; using ${cut}"
       fi
     fi
     lscpu=$(resolve_path lscpu)
@@ -127,20 +108,26 @@ case "$("${uname}" -s)" in
       # /etc/os-release is available on Debian 7+
       base_distro=debian
     elif [[ -e /etc/os-release ]]; then
-      if "${grep}" -Eq '^ID_LIKE=' /etc/os-release; then
-        base_distro=$("${grep}" -E '^ID_LIKE=' /etc/os-release | "${cut}" -d= -f2)
-        case "${base_distro}" in
-          *debian*) base_distro=debian ;;
-          *fedora*) base_distro=fedora ;;
-          *suse*) base_distro=suse ;;
-          *arch*) base_distro=arch ;;
-          *alpine*) base_distro=alpine ;;
-          *openwrt*) base_distro=openwrt ;;
-        esac
-      else
-        base_distro=$("${grep}" -E '^ID=' /etc/os-release | "${cut}" -d= -f2)
-      fi
-      base_distro="${base_distro//\"/}"
+      base_distro=$("${grep}" -E '^ID_LIKE=' /etc/os-release || true)
+      case "${base_distro}" in
+        *debian*) base_distro=debian ;;
+        *fedora*) base_distro=fedora ;;
+        *suse*) base_distro=suse ;;
+        *arch*) base_distro=arch ;;
+        *alpine*) base_distro=alpine ;;
+        *openwrt*) base_distro=openwrt ;;
+        *)
+          base_distro=$("${grep}" -E '^ID=' /etc/os-release)
+          base_distro="${base_distro#*=}"
+          base_distro="${base_distro//\"/}"
+          case "${base_distro}" in
+            debian | fedora | suse | arch | alpine | openwrt) ;;
+            *) base_distro='' ;;
+          esac
+          ;;
+      esac
+    else
+      base_distro=''
     fi
     case "${base_distro}" in
       debian)
@@ -220,32 +207,31 @@ case "$("${uname}" -s)" in
         ;;
     esac
     if ! type -P git >/dev/null; then
-      case "${base_distro}" in
-        debian | fedora | suse | arch | alpine | openwrt)
-          sudo=$(resolve_path sudo)
-          if [[ -z "${sudo}" ]]; then
-            sudo=$(type -P sudo || true)
-            if [[ -n "${sudo}" ]]; then
-              bail "sudo is unavailable at standard location; found ${sudo}"
-            fi
+      if [[ -n "${base_distro}" ]]; then
+        sudo=$(resolve_path sudo)
+        if [[ -z "${sudo}" ]]; then
+          sudo=$(type -P sudo || true)
+          if [[ -n "${sudo}" ]]; then
+            bail "sudo is unavailable at standard location; found ${sudo}"
           fi
-          _sudo() {
-            if [[ -n "${sudo}" ]]; then
-              "${sudo}" "$@"
-            else
-              "$@"
-            fi
-          }
-          printf '::group::Install packages required for checkout (git)\n'
-          case "${base_distro}" in
-            debian) sys_install ca-certificates git ;;
-            openwrt) sys_install git git-http ;;
-            *) sys_install git ;;
-          esac
-          printf '::endgroup::\n'
-          ;;
-        *) warn "checkout-action requires git on non-Debian/Fedora/SUSE/Arch/Alpine/OpenWrt-based Linux" ;;
-      esac
+        fi
+        _sudo() {
+          if [[ -n "${sudo}" ]]; then
+            "${sudo}" "$@"
+          else
+            "$@"
+          fi
+        }
+        printf '::group::Install packages required for checkout (git)\n'
+        case "${base_distro}" in
+          debian) sys_install ca-certificates git ;;
+          openwrt) sys_install git git-http ;;
+          *) sys_install git ;;
+        esac
+        printf '::endgroup::\n'
+      else
+        warn "checkout-action requires git on non-Debian/Fedora/SUSE/Arch/Alpine/OpenWrt-based Linux"
+      fi
     fi
     git=$(resolve_path git)
     if [[ -z "${git}" ]]; then
@@ -257,8 +243,7 @@ case "$("${uname}" -s)" in
       fi
     fi
     ;;
-  Darwin)
-    host_os=macos
+  macOS)
     g_for_hw_info /usr/sbin/sysctl hw.optional machdep.cpu
     if ! type -P git >/dev/null; then
       warn "checkout-action requires git on macOS"
@@ -273,8 +258,7 @@ case "$("${uname}" -s)" in
       fi
     fi
     ;;
-  MINGW* | MSYS* | CYGWIN* | Windows_NT)
-    host_os=windows
+  Windows)
     g_for_hw_info 'C:\Windows\system32\systeminfo.exe'
     if ! type -P git >/dev/null; then
       warn "checkout-action requires git on Windows"
@@ -296,52 +280,34 @@ case "$("${uname}" -s)" in
           git='/cygdrive/c/Program Files/Git/bin/git'
         elif [[ -x 'C:\Program Files\Git\bin\git.exe' ]]; then
           git='C:\Program Files\Git\bin\git.exe'
+        elif [[ -n "${HAS_TOKEN}" ]]; then
+          bail "git is unavailable at standard location; found ${git}"
         else
-          if [[ -n "${HAS_TOKEN}" ]]; then
-            bail "git is unavailable at standard location; found ${git}"
-          else
-            warn "git is unavailable at standard location; using ${git}"
-          fi
+          warn "git is unavailable at standard location; using ${git}"
         fi
         ;;
     esac
+    home="${HOME}"
+    if [[ "${home}" == "/home/"* ]]; then
+      is_fake_home=1
+      if [[ -d "${home/\/home\///c/Users/}" ]]; then
+        # MSYS2 https://github.com/taiki-e/install-action/pull/518#issuecomment-2160736760
+        home="${home/\/home\///c/Users/}"
+      elif [[ -d "${home/\/home\///cygdrive/c/Users/}" ]]; then
+        # Cygwin https://github.com/taiki-e/install-action/issues/224#issuecomment-1720196288
+        home="${home/\/home\///cygdrive/c/Users/}"
+      else
+        warn "\$HOME starting /home/ (${home}) on Windows bash is usually fake path, this may cause checkout issue"
+      fi
+    fi
+    # See action.yml.
+    printf '' >|"${home}/.checkout-action-init"
     ;;
-  *) bail "unrecognized OS type '$("${uname}" -s)'" ;;
+  *) bail "unrecognized OS '${RUNNER_OS}'" ;;
 esac
 
-home="${HOME:-}"
 wd=$(pwd)
-if [[ -z "${home}" ]]; then
-  realpath=$(resolve_path realpath)
-  if [[ -z "${realpath}" ]]; then
-    realpath=$(type -P realpath)
-    if [[ -n "${HAS_TOKEN}" ]]; then
-      bail "realpath is unavailable at standard location; found ${realpath}"
-    else
-      warn "realpath is unavailable at standard location; using ${realpath}"
-    fi
-  fi
-  # https://github.com/IBM/actionspz/issues/30
-  home=$("${realpath}" ~)
-  export HOME="${home}"
-fi
-is_fake_home=''
-if [[ "${host_os}" == "windows" ]]; then
-  if [[ "${home}" == "/home/"* ]]; then
-    is_fake_home=1
-    if [[ -d "${home/\/home\///c/Users/}" ]]; then
-      # MSYS2 https://github.com/taiki-e/install-action/pull/518#issuecomment-2160736760
-      home="${home/\/home\///c/Users/}"
-    elif [[ -d "${home/\/home\///cygdrive/c/Users/}" ]]; then
-      # Cygwin https://github.com/taiki-e/install-action/issues/224#issuecomment-1720196288
-      home="${home/\/home\///cygdrive/c/Users/}"
-    else
-      warn "\$HOME starting /home/ (${home}) on Windows bash is usually fake path, this may cause checkout issue"
-    fi
-  fi
-  # See action.yml.
-  printf '' >|"${home}/.checkout-action-init"
-fi
+
 add_safe_directory() {
   # error: could not lock config file C:/tools/cygwin/home/runneradmin/.gitconfig: No such file or directory
   # error: could not lock config file C:/msys64/home/runneradmin/.gitconfig: No such file or directory

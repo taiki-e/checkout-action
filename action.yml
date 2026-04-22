@@ -116,6 +116,7 @@ runs:
         INPUT_SHA: ${{ github.sha }}
         INPUT_REF: ${{ github.ref }}
         HAS_TOKEN: ${{ inputs.token == '' && '' || '1' }}
+        RUNNER_OS: ${{ runner.os }}
       if: runner.os != 'Windows'
     # Use pwsh and retry on bash startup failure to work around windows-11-arm runner bug:
     # https://github.com/actions/partner-runner-images/issues/169
@@ -171,4 +172,5 @@ runs:
         INPUT_SHA: ${{ github.sha }}
         INPUT_REF: ${{ github.ref }}
         HAS_TOKEN: ${{ inputs.token == '' && '' || '1' }}
+        RUNNER_OS: ${{ runner.os }}
       if: runner.os == 'Windows'

@@ -310,16 +310,6 @@ esac
 
 wd=$(pwd)
 
-add_safe_directory() {
-  # error: could not lock config file C:/tools/cygwin/home/runneradmin/.gitconfig: No such file or directory
-  # error: could not lock config file C:/msys64/home/runneradmin/.gitconfig: No such file or directory
-  if [[ -n "${is_fake_home}" ]]; then
-    g "${git}" config --global --add safe.directory "${wd}" || true
-  else
-    g "${git}" config --global --add safe.directory "${wd}"
-  fi
-}
-
 g "${git}" version
 git_version=$("${git}" version)
 if [[ -n "${HAS_TOKEN}" ]]; then
@@ -339,7 +329,13 @@ fi
 # variables or configs: https://git-scm.com/docs/git-init#_template_directory
 g "${git}" init --template=''
 
-add_safe_directory
+# error: could not lock config file C:/tools/cygwin/home/runneradmin/.gitconfig: No such file or directory
+# error: could not lock config file C:/msys64/home/runneradmin/.gitconfig: No such file or directory
+if [[ -n "${is_fake_home}" ]]; then
+  g "${git}" config --global --add safe.directory "${wd}" || true
+else
+  g "${git}" config --global --add safe.directory "${wd}"
+fi
 
 g "${git}" remote add origin "${repository_url}"
 
@@ -397,5 +393,3 @@ fi
 printf '::endgroup::\n'
 
 g retry "${git}" "${checkout_args[@]}"
-
-add_safe_directory

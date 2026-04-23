@@ -335,6 +335,12 @@ if [[ "${git_version}" == 'git version 1.'* ]] && [[ "${git_version}" != 'git ve
   warn "this action requires git 1.8+"
 fi
 
+# Output the current global/system config to make it easier to debug the git issues.
+# On GitHub-provided runner, Linux and Windows has only system config and macOS has only global config.
+# git newly installed on containers
+# Do not pass common_args because it affects config list.
+g "${git}" --no-pager config --list || true
+
 # Disable template to avoid needless copy of sample hooks and reduce risk of hook injections in
 # compromised environments. This option takes precedence, so there is no need to modify environment
 # variables or configs: https://git-scm.com/docs/git-init#_template_directory

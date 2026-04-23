@@ -24,7 +24,8 @@ runs:
         if [ -n "${HAS_TOKEN}" ]; then
           # See "Secure-execution mode" in https://man7.org/linux/man-pages/man8/ld.so.8.html
           unset HOSTALIASES GCONV_PATH GETCONF_DIR LOCALDOMAIN LOCPATH RESOLV_HOST_CONF NIS_PATH NLSPATH MALLOC_TRACE RES_OPTIONS TMPDIR TZDIR
-          unset PERLLIB PERL5LIB PERL5OPT PERL5DB PERL_USE_UNSAFE_INC
+          # See https://perldoc.perl.org/perlrun#ENVIRONMENT
+          unset PERLLIB PERL5LIB PERL5OPT PERL5DB PERL_USE_UNSAFE_INC PERLIO_DEBUG PERL_HASH_SEED PERL_HASH_SEED_DEBUG PERL_INTERNAL_RAND_SEED PERL_RAND_SEED
         else
           if [ -n "${HOSTALIASES:-}" ]; then
             warn "HOSTALIASES may be ignored for security reasons in the future"
@@ -76,6 +77,21 @@ runs:
           fi
           if [ -n "${PERL_USE_UNSAFE_INC:-}" ]; then
             warn "PERL_USE_UNSAFE_INC may be ignored for security reasons in the future"
+          fi
+          if [ -n "${PERLIO_DEBUG:-}" ]; then
+            warn "PERLIO_DEBUG may be ignored for security reasons in the future"
+          fi
+          if [ -n "${PERL_HASH_SEED:-}" ]; then
+            warn "PERL_HASH_SEED may be ignored for security reasons in the future"
+          fi
+          if [ -n "${PERL_HASH_SEED_DEBUG:-}" ]; then
+            warn "PERL_HASH_SEED_DEBUG may be ignored for security reasons in the future"
+          fi
+          if [ -n "${PERL_INTERNAL_RAND_SEED:-}" ]; then
+            warn "PERL_INTERNAL_RAND_SEED may be ignored for security reasons in the future"
+          fi
+          if [ -n "${PERL_RAND_SEED:-}" ]; then
+            warn "PERL_RAND_SEED may be ignored for security reasons in the future"
           fi
         fi
         if command -v /bin/grep >/dev/null; then
@@ -209,7 +225,8 @@ runs:
         foreach ($name in $remove_env) {
           if (Test-Path "Env:$name") { Remove-Item "Env:\$name" }
         }
-        $remove_env = @('PERLLIB','PERL5LIB','PERL5OPT','PERL5DB','PERL_USE_UNSAFE_INC')
+        # See https://perldoc.perl.org/perlrun#ENVIRONMENT
+        $remove_env = @('PERLLIB','PERL5LIB','PERL5OPT','PERL5DB','PERL_USE_UNSAFE_INC','PERLIO_DEBUG','PERL_HASH_SEED','PERL_HASH_SEED_DEBUG','PERL_INTERNAL_RAND_SEED','PERL_RAND_SEED','PERL5SHELL')
         foreach ($name in $remove_env) {
           if (Test-Path "Env:$name") {
             if ("$env:HAS_TOKEN" -ne "") {
@@ -270,7 +287,8 @@ runs:
         if [ -n "${HAS_TOKEN}" ]; then
           # See "Secure-execution mode" in https://man7.org/linux/man-pages/man8/ld.so.8.html
           unset HOSTALIASES GCONV_PATH GETCONF_DIR LOCALDOMAIN LOCPATH RESOLV_HOST_CONF NIS_PATH NLSPATH MALLOC_TRACE RES_OPTIONS TMPDIR TZDIR
-          unset PERLLIB PERL5LIB PERL5OPT PERL5DB PERL_USE_UNSAFE_INC
+          # See https://perldoc.perl.org/perlrun#ENVIRONMENT
+          unset PERLLIB PERL5LIB PERL5OPT PERL5DB PERL_USE_UNSAFE_INC PERLIO_DEBUG PERL_HASH_SEED PERL_HASH_SEED_DEBUG PERL_INTERNAL_RAND_SEED PERL_RAND_SEED
         fi
         if command -v /bin/grep >/dev/null; then
           grep=/bin/grep
@@ -343,7 +361,8 @@ runs:
         foreach ($name in $remove_env) {
           if (Test-Path "Env:$name") { Remove-Item "Env:\$name" }
         }
-        $remove_env = @('PERLLIB','PERL5LIB','PERL5OPT','PERL5DB','PERL_USE_UNSAFE_INC')
+        # See https://perldoc.perl.org/perlrun#ENVIRONMENT
+        $remove_env = @('PERLLIB','PERL5LIB','PERL5OPT','PERL5DB','PERL_USE_UNSAFE_INC','PERLIO_DEBUG','PERL_HASH_SEED','PERL_HASH_SEED_DEBUG','PERL_INTERNAL_RAND_SEED','PERL_RAND_SEED','PERL5SHELL')
         foreach ($name in $remove_env) {
           if (Test-Path "Env:$name") {
             if ("$env:HAS_TOKEN" -ne "") {
@@ -403,7 +422,8 @@ runs:
         if [ -n "${HAS_TOKEN}" ]; then
           # See "Secure-execution mode" in https://man7.org/linux/man-pages/man8/ld.so.8.html
           unset HOSTALIASES GCONV_PATH GETCONF_DIR LOCALDOMAIN LOCPATH RESOLV_HOST_CONF NIS_PATH NLSPATH MALLOC_TRACE RES_OPTIONS TMPDIR TZDIR
-          unset PERLLIB PERL5LIB PERL5OPT PERL5DB PERL_USE_UNSAFE_INC
+          # See https://perldoc.perl.org/perlrun#ENVIRONMENT
+          unset PERLLIB PERL5LIB PERL5OPT PERL5DB PERL_USE_UNSAFE_INC PERLIO_DEBUG PERL_HASH_SEED PERL_HASH_SEED_DEBUG PERL_INTERNAL_RAND_SEED PERL_RAND_SEED
         fi
         if command -v /bin/grep >/dev/null; then
           grep=/bin/grep
@@ -472,7 +492,8 @@ runs:
         foreach ($name in $remove_env) {
           if (Test-Path "Env:$name") { Remove-Item "Env:\$name" }
         }
-        $remove_env = @('PERLLIB','PERL5LIB','PERL5OPT','PERL5DB','PERL_USE_UNSAFE_INC')
+        # See https://perldoc.perl.org/perlrun#ENVIRONMENT
+        $remove_env = @('PERLLIB','PERL5LIB','PERL5OPT','PERL5DB','PERL_USE_UNSAFE_INC','PERLIO_DEBUG','PERL_HASH_SEED','PERL_HASH_SEED_DEBUG','PERL_INTERNAL_RAND_SEED','PERL_RAND_SEED','PERL5SHELL')
         foreach ($name in $remove_env) {
           if (Test-Path "Env:$name") {
             if ("$env:HAS_TOKEN" -ne "") {

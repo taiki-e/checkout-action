@@ -18,6 +18,7 @@ microdnf
 mirrorlist
 NLSPATH
 opkg
+PERLIO
 PERLLIB
 pluginconf
 refspec
@@ -25,5 +26,6 @@ RESOLV
 rootfs
 runneradmin
 systeminfo
+TOCTOU
 TZDIR
 USERPROFILE

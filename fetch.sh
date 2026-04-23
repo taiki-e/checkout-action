@@ -5,8 +5,17 @@ IFS=$'\n\t'
 
 # "fetch" step of checkout-action.
 #
+# If 'token' input option is set, this action prevent the leak of the token as much as possible, even in
+# compromised environments (or environments that were previously compromised and only incompletely repaired).
+#
+# Unless binaries in the system's standard locations or the runner's memory have been compromised,
+# the only way to steal sensitive data during this script's execution should be for a process launched
+# before this action to read the token passed via environment variables and exposed in `/proc/*/environ`.
+# Note that passing input to actions without using environment variables is not practical, regardless of the
+# kind of action. See https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax#inputs.
+#
 # "checkout" step is separated into a different step that does not handle sensitive data (checkout.sh),
-# because it does not require tokens.
+# because it does not require tokens and is difficult to reliably block filter.*.smudge/process/clean.
 #
 # "prepare" step, which includes installing Git, is also separated into a different step that does not
 # handle sensitive data (pre.sh), because it does not require tokens and may take some time (i.g., the time
@@ -135,6 +144,55 @@ if [[ -n "${HAS_TOKEN}" ]]; then
   if [[ -z "${openssl}" ]]; then
     openssl=$(type -P openssl)
     bail "openssl is unavailable at standard location; found ${openssl}"
+  fi
+fi
+
+if [[ -n "${HAS_TOKEN}" ]]; then
+  # If 'token' input option is set, this action prevent the leak of the token as much as possible, even in
+  # compromised environments (or environments that were previously compromised and only incompletely repaired).
+  # Ignore some configs and config overrides to prevent malicious config (e.g., malicious fsmonitor) and/or hooks.
+  # BASH_FUNC_*/ENV/BASH_ENV/CDPATH/SHELLOPTS/BASHOPTS/LD_*/DYLD_*/PERL* environment variables and profile/rc files, which also affect
+  # non-git programs are handled in action.yml.
+  # TODO: Add respect-* input options that explicitly allow these uses.
+  # NB: Sync with pre.sh and checkout.sh.
+  unset GIT_DIR GIT_WORK_TREE GIT_EXEC_PATH GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+  unset GIT_SSH_COMMAND GIT_SSH GIT_CONFIG_COUNT GIT_CONFIG_PARAMETERS
+else
+  if [[ -n "${GIT_DIR:-}" ]]; then
+    warn "GIT_DIR may be ignored for security reasons in the future"
+  fi
+  if [[ -n "${GIT_WORK_TREE:-}" ]]; then
+    warn "GIT_WORK_TREE may be ignored for security reasons in the future"
+  fi
+  if [[ -n "${GIT_EXEC_PATH:-}" ]]; then
+    warn "GIT_EXEC_PATH may be ignored for security reasons in the future"
+  fi
+  if [[ -n "${GIT_INDEX_FILE:-}" ]]; then
+    warn "GIT_INDEX_FILE may be ignored for security reasons in the future"
+  fi
+  if [[ -n "${GIT_COMMON_DIR:-}" ]]; then
+    warn "GIT_COMMON_DIR may be ignored for security reasons in the future"
+  fi
+  if [[ -n "${GIT_OBJECT_DIRECTORY:-}" ]]; then
+    warn "GIT_OBJECT_DIRECTORY may be ignored for security reasons in the future"
+  fi
+  if [[ -n "${GIT_ALTERNATE_OBJECT_DIRECTORIES:-}" ]]; then
+    warn "GIT_ALTERNATE_OBJECT_DIRECTORIES may be ignored for security reasons in the future"
+  fi
+  if [[ -n "${GIT_CONFIG_COUNT:-}" ]]; then
+    warn "GIT_CONFIG_COUNT may be ignored for security reasons in the future"
+  fi
+  if [[ -n "${GIT_CONFIG_PARAMETERS:-}" ]]; then
+    warn "GIT_CONFIG_PARAMETERS may be ignored for security reasons in the future"
+  fi
+  if [[ -n "${PERL5LIB:-}" ]]; then
+    warn "PERL5LIB may be ignored for security reasons in the future"
+  fi
+  if [[ -n "${PERL5OPT:-}" ]]; then
+    warn "PERL5OPT may be ignored for security reasons in the future"
+  fi
+  if [[ -n "${PERL5DB:-}" ]]; then
+    warn "PERL5DB may be ignored for security reasons in the future"
   fi
 fi
 

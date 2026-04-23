@@ -102,6 +102,14 @@ case "${RUNNER_OS}" in
     ;;
 esac
 
+if [[ -n "${HAS_TOKEN}" ]]; then
+  # See fetch.sh.
+  # NB: Sync with it.
+  unset GIT_DIR GIT_WORK_TREE GIT_EXEC_PATH GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+  unset GIT_SSH_COMMAND GIT_SSH GIT_CONFIG_COUNT GIT_CONFIG_PARAMETERS
+  unset PERL5LIB PERL5OPT PERL5DB
+fi
+
 # See fetch.sh.
 # NB: Sync with it.
 common_args=(-c core.hooksPath=/dev/null -c core.fsmonitor=false)

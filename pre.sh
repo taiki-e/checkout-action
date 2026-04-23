@@ -63,7 +63,7 @@ if [[ -z "${sleep}" ]]; then
   if [[ -n "${HAS_TOKEN}" ]]; then
     bail "sleep is unavailable at standard location; found ${sleep}"
   else
-    warn "sleep is unavailable at standard location; using ${sleep}"
+    warn "sleep is unavailable at standard location; using ${sleep}, but this may be blocked for security reasons in the future"
   fi
 fi
 is_fake_home=''
@@ -75,7 +75,7 @@ case "${RUNNER_OS}" in
       if [[ -n "${HAS_TOKEN}" ]]; then
         bail "grep is unavailable at standard location; found ${grep}"
       else
-        warn "grep is unavailable at standard location; using ${grep}"
+        warn "grep is unavailable at standard location; using ${grep}, but this may be blocked for security reasons in the future"
       fi
     fi
     lscpu=$(resolve_path lscpu)
@@ -239,7 +239,7 @@ case "${RUNNER_OS}" in
       if [[ -n "${HAS_TOKEN}" ]]; then
         bail "git is unavailable at standard location; found ${git}"
       else
-        warn "git is unavailable at standard location; using ${git}"
+        warn "git is unavailable at standard location; using ${git}, but this may be blocked for security reasons in the future"
       fi
     fi
     ;;
@@ -258,7 +258,7 @@ case "${RUNNER_OS}" in
       if [[ -n "${HAS_TOKEN}" ]]; then
         bail "git is unavailable at standard location; found ${git}"
       else
-        warn "git is unavailable at standard location; using ${git}"
+        warn "git is unavailable at standard location; using ${git}, but this may be blocked for security reasons in the future"
       fi
     fi
     ;;
@@ -291,7 +291,7 @@ case "${RUNNER_OS}" in
         elif [[ -n "${HAS_TOKEN}" ]]; then
           bail "git is unavailable at standard location; found ${git}"
         else
-          warn "git is unavailable at standard location; using ${git}"
+          warn "git is unavailable at standard location; using ${git}, but this may be blocked for security reasons in the future"
         fi
         ;;
     esac
@@ -315,6 +315,14 @@ case "${RUNNER_OS}" in
 esac
 
 wd=$(pwd)
+
+if [[ -n "${HAS_TOKEN}" ]]; then
+  # See fetch.sh.
+  # NB: Sync with it.
+  unset GIT_DIR GIT_WORK_TREE GIT_EXEC_PATH GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+  unset GIT_SSH_COMMAND GIT_SSH GIT_CONFIG_COUNT GIT_CONFIG_PARAMETERS
+  unset PERL5LIB PERL5OPT PERL5DB
+fi
 
 # See fetch.sh.
 # NB: Sync with it.

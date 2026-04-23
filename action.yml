@@ -1,5 +1,5 @@
 name: checkout-action
-description: GitHub Action for checking out a repository. (Simplified actions/checkout alternative that does not depend on Node.js.)
+description: GitHub Action for checking out a repository. (Simplified and security-enhanced actions/checkout alternative that does not depend on Node.js.)
 
 inputs:
   token:
@@ -21,6 +21,63 @@ runs:
         warn() {
           printf '::warning::checkout-action: %s\n' "$*"
         }
+        if [ -n "${HAS_TOKEN}" ]; then
+          # See "Secure-execution mode" in https://man7.org/linux/man-pages/man8/ld.so.8.html
+          unset HOSTALIASES GCONV_PATH GETCONF_DIR LOCALDOMAIN LOCPATH RESOLV_HOST_CONF NIS_PATH NLSPATH MALLOC_TRACE RES_OPTIONS TMPDIR TZDIR
+          unset PERLLIB PERL5LIB PERL5OPT PERL5DB PERL_USE_UNSAFE_INC
+        else
+          if [ -n "${HOSTALIASES:-}" ]; then
+            warn "HOSTALIASES may be ignored for security reasons in the future"
+          fi
+          if [ -n "${GCONV_PATH:-}" ]; then
+            warn "GCONV_PATH may be ignored for security reasons in the future"
+          fi
+          if [ -n "${GETCONF_DIR:-}" ]; then
+            warn "GETCONF_DIR may be ignored for security reasons in the future"
+          fi
+          if [ -n "${LOCALDOMAIN:-}" ]; then
+            warn "LOCALDOMAIN may be ignored for security reasons in the future"
+          fi
+          if [ -n "${LOCPATH:-}" ]; then
+            warn "LOCPATH may be ignored for security reasons in the future"
+          fi
+          if [ -n "${RESOLV_HOST_CONF:-}" ]; then
+            warn "RESOLV_HOST_CONF may be ignored for security reasons in the future"
+          fi
+          if [ -n "${NIS_PATH:-}" ]; then
+            warn "NIS_PATH may be ignored for security reasons in the future"
+          fi
+          if [ -n "${NLSPATH:-}" ]; then
+            warn "NLSPATH may be ignored for security reasons in the future"
+          fi
+          if [ -n "${MALLOC_TRACE:-}" ]; then
+            warn "MALLOC_TRACE may be ignored for security reasons in the future"
+          fi
+          if [ -n "${RES_OPTIONS:-}" ]; then
+            warn "RES_OPTIONS may be ignored for security reasons in the future"
+          fi
+          if [ -n "${TMPDIR:-}" ]; then
+            warn "TMPDIR may be ignored for security reasons in the future"
+          fi
+          if [ -n "${TZDIR:-}" ]; then
+            warn "TZDIR may be ignored for security reasons in the future"
+          fi
+          if [ -n "${PERLLIB:-}" ]; then
+            warn "PERLLIB may be ignored for security reasons in the future"
+          fi
+          if [ -n "${PERL5LIB:-}" ]; then
+            warn "PERL5LIB may be ignored for security reasons in the future"
+          fi
+          if [ -n "${PERL5OPT:-}" ]; then
+            warn "PERL5OPT may be ignored for security reasons in the future"
+          fi
+          if [ -n "${PERL5DB:-}" ]; then
+            warn "PERL5DB may be ignored for security reasons in the future"
+          fi
+          if [ -n "${PERL_USE_UNSAFE_INC:-}" ]; then
+            warn "PERL_USE_UNSAFE_INC may be ignored for security reasons in the future"
+          fi
+        fi
         if command -v /bin/grep >/dev/null; then
           grep=/bin/grep
         elif command -v /usr/bin/grep >/dev/null; then
@@ -30,7 +87,7 @@ runs:
           if [ -n "${HAS_TOKEN}" ]; then
             bail "grep is unavailable at standard location; found ${grep}"
           else
-            warn "grep is unavailable at standard location; using ${grep}"
+            warn "grep is unavailable at standard location; using ${grep}, but this may be blocked for security reasons in the future"
           fi
         fi
         # If /bin/sh is dash, environment variable containing % is not imported, but is fine
@@ -48,7 +105,7 @@ runs:
             if [ -n "${HAS_TOKEN}" ]; then
               bail "sleep is unavailable at standard location; found ${sleep}"
             else
-              warn "sleep is unavailable at standard location; using ${sleep}"
+              warn "sleep is unavailable at standard location; using ${sleep}, but this may be blocked for security reasons in the future"
             fi
           fi
           retry() {
@@ -105,11 +162,11 @@ runs:
           if [ -n "${HAS_TOKEN}" ]; then
             bail "bash is unavailable at standard location; found ${bash}"
           else
-            warn "bash is unavailable at standard location; using ${bash}"
+            warn "bash is unavailable at standard location; using ${bash}, but this may be blocked for security reasons in the future"
             "${bash}" --noprofile --norc "${GITHUB_ACTION_PATH:?}/pre.sh"
           fi
         fi
-      shell: /usr/bin/env -u ENV -u BASH_ENV -u CDPATH -u SHELLOPTS -u BASHOPTS /bin/sh -eu {0} # zizmor: ignore[misfeature] false positive
+      shell: /bin/sh -eu {0}
       env:
         # NB: Sync with Windows case.
         # TODO: support in input options
@@ -117,20 +174,50 @@ runs:
         INPUT_SERVER_URL: ${{ github.server_url }}
         HAS_TOKEN: ${{ inputs.token == '' && '' || '1' }}
         RUNNER_OS: ${{ runner.os }}
+        # for sh/bash
+        ENV: ''
+        BASH_ENV: ''
+        CDPATH: ''
+        SHELLOPTS: ''
+        BASHOPTS: ''
+        # for Linux
+        # See "Secure-execution mode" in https://man7.org/linux/man-pages/man8/ld.so.8.html
+        LD_AUDIT: ''
+        LD_DEBUG: ''
+        LD_DEBUG_OUTPUT: ''
+        LD_DYNAMIC_WEAK: ''
+        LD_HWCAP_MASK: ''
+        LD_LIBRARY_PATH: ''
+        LD_ORIGIN_PATH: ''
+        LD_PRELOAD: ''
+        LD_PROFILE: ''
+        # for macOS
+        DYLD_INSERT_LIBRARIES: ''
+        DYLD_FRAMEWORK_PATH: ''
+        DYLD_LIBRARY_PATH: ''
+        DYLD_FALLBACK_FRAMEWORK_PATH: ''
+        DYLD_FALLBACK_LIBRARY_PATH: ''
+        DYLD_VERSIONED_FRAMEWORK_PATH: ''
+        DYLD_VERSIONED_LIBRARY_PATH: ''
       if: runner.os != 'Windows'
     # Use pwsh and retry on bash startup failure to work around windows-11-arm runner bug:
     # https://github.com/actions/partner-runner-images/issues/169
     - name: Prepare (Windows)
       run: |
         Set-StrictMode -Version Latest
-        if (Test-Path "Env:ENV") { Remove-Item Env:\ENV }
-        if (Test-Path "Env:BASH_ENV") { Remove-Item Env:\BASH_ENV }
-        if (Test-Path "Env:CDPATH") { Remove-Item Env:\CDPATH }
-        if (Test-Path "Env:SHELLOPTS") { Remove-Item Env:\SHELLOPTS }
-        if (Test-Path "Env:BASHOPTS") { Remove-Item Env:\BASHOPTS }
-        if (Test-Path "Env:BASH_FUNC_*") {
-          Write-Output "::error::checkout-action: bash function injection via BASH_FUNC_ environment variable is not allowed for security reasons"
-          exit 1
+        $remove_env = @('ENV','BASH_ENV','CDPATH','SHELLOPTS','BASHOPTS','BASH_FUNC_*')
+        foreach ($name in $remove_env) {
+          if (Test-Path "Env:$name") { Remove-Item "Env:\$name" }
+        }
+        $remove_env = @('PERLLIB','PERL5LIB','PERL5OPT','PERL5DB','PERL_USE_UNSAFE_INC')
+        foreach ($name in $remove_env) {
+          if (Test-Path "Env:$name") {
+            if ("$env:HAS_TOKEN" -ne "") {
+              Remove-Item "Env:\$name"
+            } else {
+              Write-Output "::warning::checkout-action: $name may be ignored for security reasons in the future"
+            }
+          }
         }
         $bash = (Get-Command bash).Path
         switch ($bash) {
@@ -142,7 +229,7 @@ runs:
               Write-Output "::error::checkout-action: bash is unavailable at standard location; found $bash"
               exit 1
             } else {
-              Write-Output "::warning::checkout-action: bash is unavailable at standard location; using $bash"
+              Write-Output "::warning::checkout-action: bash is unavailable at standard location; using $bash, but this may be blocked for security reasons in the future"
             }
           }
         }
@@ -180,9 +267,11 @@ runs:
           printf '::error::checkout-action: %s\n' "$*"
           exit 1
         }
-        warn() {
-          printf '::warning::checkout-action: %s\n' "$*"
-        }
+        if [ -n "${HAS_TOKEN}" ]; then
+          # See "Secure-execution mode" in https://man7.org/linux/man-pages/man8/ld.so.8.html
+          unset HOSTALIASES GCONV_PATH GETCONF_DIR LOCALDOMAIN LOCPATH RESOLV_HOST_CONF NIS_PATH NLSPATH MALLOC_TRACE RES_OPTIONS TMPDIR TZDIR
+          unset PERLLIB PERL5LIB PERL5OPT PERL5DB PERL_USE_UNSAFE_INC
+        fi
         if command -v /bin/grep >/dev/null; then
           grep=/bin/grep
         elif command -v /usr/bin/grep >/dev/null; then
@@ -205,11 +294,10 @@ runs:
           if [ -n "${HAS_TOKEN}" ]; then
             bail "bash is unavailable at standard location; found ${bash}"
           else
-            warn "bash is unavailable at standard location; using ${bash}"
             "${bash}" --noprofile --norc "${GITHUB_ACTION_PATH:?}/fetch.sh"
           fi
         fi
-      shell: /usr/bin/env -u ENV -u BASH_ENV -u CDPATH -u SHELLOPTS -u BASHOPTS /bin/sh -eu {0} # zizmor: ignore[misfeature] false positive
+      shell: /bin/sh -eu {0}
       env:
         # NB: Sync with Windows case.
         INPUT_TOKEN: ${{ inputs.token }}
@@ -220,20 +308,48 @@ runs:
         INPUT_REF: ${{ github.ref }}
         HAS_TOKEN: ${{ inputs.token == '' && '' || '1' }}
         RUNNER_OS: ${{ runner.os }}
+        # for sh/bash
+        ENV: ''
+        BASH_ENV: ''
+        CDPATH: ''
+        SHELLOPTS: ''
+        BASHOPTS: ''
+        # for Linux
+        # See "Secure-execution mode" in https://man7.org/linux/man-pages/man8/ld.so.8.html
+        LD_AUDIT: ''
+        LD_DEBUG: ''
+        LD_DEBUG_OUTPUT: ''
+        LD_DYNAMIC_WEAK: ''
+        LD_HWCAP_MASK: ''
+        LD_LIBRARY_PATH: ''
+        LD_ORIGIN_PATH: ''
+        LD_PRELOAD: ''
+        LD_PROFILE: ''
+        # for macOS
+        DYLD_INSERT_LIBRARIES: ''
+        DYLD_FRAMEWORK_PATH: ''
+        DYLD_LIBRARY_PATH: ''
+        DYLD_FALLBACK_FRAMEWORK_PATH: ''
+        DYLD_FALLBACK_LIBRARY_PATH: ''
+        DYLD_VERSIONED_FRAMEWORK_PATH: ''
+        DYLD_VERSIONED_LIBRARY_PATH: ''
       if: runner.os != 'Windows'
     # Use pwsh and retry on bash startup failure to work around windows-11-arm runner bug:
     # https://github.com/actions/partner-runner-images/issues/169
     - name: Fetch (Windows)
       run: |
         Set-StrictMode -Version Latest
-        if (Test-Path "Env:ENV") { Remove-Item Env:\ENV }
-        if (Test-Path "Env:BASH_ENV") { Remove-Item Env:\BASH_ENV }
-        if (Test-Path "Env:CDPATH") { Remove-Item Env:\CDPATH }
-        if (Test-Path "Env:SHELLOPTS") { Remove-Item Env:\SHELLOPTS }
-        if (Test-Path "Env:BASHOPTS") { Remove-Item Env:\BASHOPTS }
-        if (Test-Path "Env:BASH_FUNC_*") {
-          Write-Output "::error::checkout-action: bash function injection via BASH_FUNC_ environment variable is not allowed for security reasons"
-          exit 1
+        $remove_env = @('ENV','BASH_ENV','CDPATH','SHELLOPTS','BASHOPTS','BASH_FUNC_*')
+        foreach ($name in $remove_env) {
+          if (Test-Path "Env:$name") { Remove-Item "Env:\$name" }
+        }
+        $remove_env = @('PERLLIB','PERL5LIB','PERL5OPT','PERL5DB','PERL_USE_UNSAFE_INC')
+        foreach ($name in $remove_env) {
+          if (Test-Path "Env:$name") {
+            if ("$env:HAS_TOKEN" -ne "") {
+              Remove-Item "Env:\$name"
+            }
+          }
         }
         $bash = (Get-Command bash).Path
         switch ($bash) {
@@ -284,9 +400,11 @@ runs:
           printf '::error::checkout-action: %s\n' "$*"
           exit 1
         }
-        warn() {
-          printf '::warning::checkout-action: %s\n' "$*"
-        }
+        if [ -n "${HAS_TOKEN}" ]; then
+          # See "Secure-execution mode" in https://man7.org/linux/man-pages/man8/ld.so.8.html
+          unset HOSTALIASES GCONV_PATH GETCONF_DIR LOCALDOMAIN LOCPATH RESOLV_HOST_CONF NIS_PATH NLSPATH MALLOC_TRACE RES_OPTIONS TMPDIR TZDIR
+          unset PERLLIB PERL5LIB PERL5OPT PERL5DB PERL_USE_UNSAFE_INC
+        fi
         if command -v /bin/grep >/dev/null; then
           grep=/bin/grep
         elif command -v /usr/bin/grep >/dev/null; then
@@ -312,27 +430,55 @@ runs:
             "${bash}" --noprofile --norc "${GITHUB_ACTION_PATH:?}/checkout.sh"
           fi
         fi
-      shell: /usr/bin/env -u ENV -u BASH_ENV -u CDPATH -u SHELLOPTS -u BASHOPTS /bin/sh -eu {0} # zizmor: ignore[misfeature] false positive
+      shell: /bin/sh -eu {0}
       env:
         # NB: Sync with Windows case.
         # TODO: support in input options
         INPUT_REF: ${{ github.ref }}
         HAS_TOKEN: ${{ inputs.token == '' && '' || '1' }}
         RUNNER_OS: ${{ runner.os }}
+        # for sh/bash
+        ENV: ''
+        BASH_ENV: ''
+        CDPATH: ''
+        SHELLOPTS: ''
+        BASHOPTS: ''
+        # for Linux
+        # See "Secure-execution mode" in https://man7.org/linux/man-pages/man8/ld.so.8.html
+        LD_AUDIT: ''
+        LD_DEBUG: ''
+        LD_DEBUG_OUTPUT: ''
+        LD_DYNAMIC_WEAK: ''
+        LD_HWCAP_MASK: ''
+        LD_LIBRARY_PATH: ''
+        LD_ORIGIN_PATH: ''
+        LD_PRELOAD: ''
+        LD_PROFILE: ''
+        # for macOS
+        DYLD_INSERT_LIBRARIES: ''
+        DYLD_FRAMEWORK_PATH: ''
+        DYLD_LIBRARY_PATH: ''
+        DYLD_FALLBACK_FRAMEWORK_PATH: ''
+        DYLD_FALLBACK_LIBRARY_PATH: ''
+        DYLD_VERSIONED_FRAMEWORK_PATH: ''
+        DYLD_VERSIONED_LIBRARY_PATH: ''
       if: runner.os != 'Windows'
     # Use pwsh and retry on bash startup failure to work around windows-11-arm runner bug:
     # https://github.com/actions/partner-runner-images/issues/169
     - name: Checkout (Windows)
       run: |
         Set-StrictMode -Version Latest
-        if (Test-Path "Env:ENV") { Remove-Item Env:\ENV }
-        if (Test-Path "Env:BASH_ENV") { Remove-Item Env:\BASH_ENV }
-        if (Test-Path "Env:CDPATH") { Remove-Item Env:\CDPATH }
-        if (Test-Path "Env:SHELLOPTS") { Remove-Item Env:\SHELLOPTS }
-        if (Test-Path "Env:BASHOPTS") { Remove-Item Env:\BASHOPTS }
-        if (Test-Path "Env:BASH_FUNC_*") {
-          Write-Output "::error::checkout-action: bash function injection via BASH_FUNC_ environment variable is not allowed for security reasons"
-          exit 1
+        $remove_env = @('ENV','BASH_ENV','CDPATH','SHELLOPTS','BASHOPTS','BASH_FUNC_*')
+        foreach ($name in $remove_env) {
+          if (Test-Path "Env:$name") { Remove-Item "Env:\$name" }
+        }
+        $remove_env = @('PERLLIB','PERL5LIB','PERL5OPT','PERL5DB','PERL_USE_UNSAFE_INC')
+        foreach ($name in $remove_env) {
+          if (Test-Path "Env:$name") {
+            if ("$env:HAS_TOKEN" -ne "") {
+              Remove-Item "Env:\$name"
+            }
+          }
         }
         $bash = (Get-Command bash).Path
         switch ($bash) {

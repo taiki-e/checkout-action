@@ -292,8 +292,12 @@ esac
 
 wd=$(pwd)
 
-g "${git}" version
-git_version=$("${git}" version)
+# See fetch.sh.
+# NB: Sync with it.
+common_args=(-c core.hooksPath=/dev/null -c core.fsmonitor=false)
+
+g "${git}" "${common_args[@]}" version
+git_version=$("${git}" "${common_args[@]}" version)
 # --local and --no-recurse-submodules require git 1.8.
 if [[ "${git_version}" == 'git version 1.'* ]] && [[ "${git_version}" != 'git version 1.8.'* ]] && [[ "${git_version}" != 'git version 1.9.'* ]]; then
   warn "this action requires git 1.8+"
@@ -302,16 +306,16 @@ fi
 # Disable template to avoid needless copy of sample hooks and reduce risk of hook injections in
 # compromised environments. This option takes precedence, so there is no need to modify environment
 # variables or configs: https://git-scm.com/docs/git-init#_template_directory
-g "${git}" init --template=''
+g "${git}" "${common_args[@]}" init --template=''
 
 # error: could not lock config file C:/tools/cygwin/home/runneradmin/.gitconfig: No such file or directory
 # error: could not lock config file C:/msys64/home/runneradmin/.gitconfig: No such file or directory
 if [[ -n "${is_fake_home}" ]]; then
-  g "${git}" config --global --add safe.directory "${wd}" || true
+  g "${git}" "${common_args[@]}" config --global --add safe.directory "${wd}" || true
 else
-  g "${git}" config --global --add safe.directory "${wd}"
+  g "${git}" "${common_args[@]}" config --global --add safe.directory "${wd}"
 fi
 
-g "${git}" remote add origin "${repository_url}"
+g "${git}" "${common_args[@]}" remote add origin "${repository_url}"
 
-g "${git}" config --local gc.auto 0
+g "${git}" "${common_args[@]}" config --local gc.auto 0

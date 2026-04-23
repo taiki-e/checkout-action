@@ -3,6 +3,7 @@ archlinux
 ASKPASS
 CDPATH
 clangarm
+cmdline
 cygdrive
 doas
 fastestmirror
@@ -11,6 +12,7 @@ microdnf
 mirrorlist
 opkg
 pluginconf
+refspec
 rootfs
 runneradmin
 systeminfo

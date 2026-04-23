@@ -188,7 +188,7 @@ case "${RUNNER_OS}" in
         fi
         ;;
     esac
-    if ! type -P git >/dev/null; then
+    if ! type -P git >/dev/null || { [[ -n "${HAS_TOKEN}" ]] && ! type -P openssl >/dev/null; }; then
       if [[ -n "${base_distro}" ]]; then
         sudo=$(resolve_path sudo)
         if [[ -z "${sudo}" ]]; then
@@ -204,15 +204,33 @@ case "${RUNNER_OS}" in
             "$@"
           fi
         }
-        printf '::group::Install packages required for checkout (git)\n'
-        case "${base_distro}" in
-          debian) sys_install ca-certificates git ;;
-          openwrt) sys_install git git-http ;;
-          *) sys_install git ;;
-        esac
+        packages=()
+        if ! type -P git >/dev/null; then
+          case "${base_distro}" in
+            debian) packages+=(ca-certificates git) ;;
+            openwrt) packages+=(git git-http) ;;
+            *) packages+=(git) ;;
+          esac
+        fi
+        if [[ -n "${HAS_TOKEN}" ]] && ! type -P openssl >/dev/null; then
+          case "${base_distro}" in
+            openwrt) packages+=(openssl-util) ;;
+            *) packages+=(openssl) ;;
+          esac
+        fi
+        IFS=' '
+        list="${packages[*]}"
+        IFS=$'\n\t'
+        printf '::group::Install packages required for checkout (%s)\n' "${list}"
+        sys_install "${packages[@]}"
         printf '::endgroup::\n'
       else
-        warn "this action requires git on non-Debian/Fedora/SUSE/Arch/Alpine/OpenWrt-based Linux"
+        if ! type -P git >/dev/null; then
+          warn "this action requires git on non-Debian/Fedora/SUSE/Arch/Alpine/OpenWrt-based Linux"
+        fi
+        if [[ -n "${HAS_TOKEN}" ]] && ! type -P openssl >/dev/null; then
+          warn "'token' input option requires openssl on non-Debian/Fedora/SUSE/Arch/Alpine/OpenWrt-based Linux"
+        fi
       fi
     fi
     git=$(resolve_path git)
@@ -231,6 +249,9 @@ case "${RUNNER_OS}" in
     if ! type -P git >/dev/null; then
       warn "this action requires git on macOS"
     fi
+    if [[ -n "${HAS_TOKEN}" ]] && ! type -P openssl >/dev/null; then
+      warn "'token' input option requires openssl on macOS"
+    fi
     git=$(resolve_path git)
     if [[ -z "${git}" ]]; then
       git=$(type -P git)
@@ -246,6 +267,9 @@ case "${RUNNER_OS}" in
     g_for_hw_info 'C:\Windows\system32\systeminfo.exe'
     if ! type -P git >/dev/null; then
       warn "this action requires git on Windows"
+    fi
+    if [[ -n "${HAS_TOKEN}" ]] && ! type -P openssl >/dev/null; then
+      warn "'token' input option requires openssl on Windows"
     fi
     git=$(type -P git)
     case "${git}" in

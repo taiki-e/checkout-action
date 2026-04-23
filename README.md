@@ -76,6 +76,7 @@ On other platforms, at least the following tools are required:
 
 - bash 3.2+
 - git 1.8+ (when using `token` input option, it is recommended using git 2.0+ for security reasons)
+- openssl (if `token` input option is set)
 
 Known environments affected by the above version requirements are CentOS 6 (EoL on 2020-11) and Ubuntu 12.04 (EoL on 2017-04) using git 1.7 (see "Install requirements" in [our CI config](https://github.com/taiki-e/checkout-action/blob/HEAD/.github/workflows/ci.yml) for example of workaround).
 

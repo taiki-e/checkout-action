@@ -130,6 +130,13 @@ case "${RUNNER_OS}" in
     fi
     ;;
 esac
+if [[ -n "${HAS_TOKEN}" ]]; then
+  openssl=$(resolve_path openssl)
+  if [[ -z "${openssl}" ]]; then
+    openssl=$(type -P openssl)
+    bail "openssl is unavailable at standard location; found ${openssl}"
+  fi
+fi
 
 # Since we disable template at git init, they normally do nothing, and in compromised environments
 # (or environments that were previously compromised and only incompletely repaired) they can lead to
@@ -167,20 +174,45 @@ else
   "${git}" "${common_args[@]}" config --local "http.${repository_url}.proxy" ''
   "${git}" "${common_args[@]}" config --local "https.${repository_url}.proxy" ''
 fi
-fetch_args+=(fetch --no-tags --prune --no-recurse-submodules --depth=1 origin)
+fetch_args+=(fetch --no-tags --prune --no-recurse-submodules --depth=1)
 if [[ "${INPUT_REF}" == "refs/heads/"* ]]; then
   branch="${INPUT_REF#refs/heads/}"
   remote_ref="refs/remotes/origin/${branch}"
-  fetch_args+=("+${INPUT_SHA}:${remote_ref}")
+  fetch_ref="+${INPUT_SHA}:${remote_ref}"
 else
-  fetch_args+=("+${INPUT_SHA}:${INPUT_REF}")
+  fetch_ref="+${INPUT_SHA}:${INPUT_REF}"
 fi
 
 IFS=' '
-cmd="${git} ${common_args[*]} ${fetch_args[*]}"
+cmd="${git} ${common_args[*]} ${fetch_args[*]} origin ${fetch_ref}"
 IFS=$'\n\t'
 printf '::group::%s\n' "${cmd}"
 if [[ -n "${HAS_TOKEN}" ]]; then
+  # In url.*.insteadOf, global/local config is preferred over -c when URL is the same.
+  # (In most options, -c is preferred over global/local config when URL is the same.)
+  # So using a sufficiently long random value as URL placeholder and replacing it with -c option,
+  # to mitigate the risk of token leaks caused by compromised global/local config.
+  # Since there is an interval between the command being displayed in /proc/<pid>/cmdline and
+  # the config being resolved, it is technically possible for a malicious url.*.insteadOf to inject
+  # local/global config, causing a malicious repository hosted on the same host to be checked out
+  # (though this is hard because we specify SHA in refspec). Anyway, thanks to credential helper's
+  # hostname verification, sending credentials to a malicious host should be prevented.
+  retry_fetch() {
+    for i in {1..10}; do
+      rand=$("${openssl}" rand -hex 64)
+      if INPUT_TOKEN="${token}" \
+        "$@" -c "url.${repository_url}.insteadOf=${rand}" \
+        "${fetch_args[@]}" "${rand}" "${fetch_ref}" 2>&1; then
+        return 0
+      else
+        "${sleep}" "${i}"
+      fi
+    done
+    rand=$("${openssl}" rand -hex 64)
+    INPUT_TOKEN="${token}" \
+      "$@" -c "url.${repository_url}.insteadOf=${rand}" \
+      "${fetch_args[@]}" "${rand}" "${fetch_ref}" 2>&1
+  }
   # The first credential.helper= is needed to ignore existing credential helpers.
   if [[ -n "${has_c_flag_with_empty_val}" ]]; then
     first_credential_helper=(-c credential.helper=)
@@ -191,8 +223,7 @@ if [[ -n "${HAS_TOKEN}" ]]; then
   # shellcheck disable=SC2016
   INPUT_PROTOCOL="${protocol}" \
     INPUT_HOSTNAME="${hostname}" \
-    INPUT_TOKEN="${token}" \
-    retry "${git}" "${common_args[@]}" \
+    retry_fetch "${git}" "${common_args[@]}" \
     ${first_credential_helper[@]+"${first_credential_helper[@]}"} \
     -c 'credential.helper=!f() {
 protocol=""
@@ -207,10 +238,9 @@ done
 if [ "${protocol}" = "${INPUT_PROTOCOL}" ] && [ "${host}" = "${INPUT_HOSTNAME}" ]; then
   printf "protocol=%s\nhost=%s\nusername=x-access-token\npassword=%s\n" "${INPUT_PROTOCOL}" "${INPUT_HOSTNAME}" "${INPUT_TOKEN}"
 fi
-}; f' \
-    "${fetch_args[@]}" 2>&1
+}; f'
 else
-  retry "${git}" "${common_args[@]}" "${fetch_args[@]}" 2>&1
+  retry "${git}" "${common_args[@]}" "${fetch_args[@]}" origin "${fetch_ref}" 2>&1
 fi
 printf '::endgroup::\n'
 

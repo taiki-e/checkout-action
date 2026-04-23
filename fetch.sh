@@ -137,16 +137,16 @@ esac
 # NB: Sync with pre.sh and checkout.sh.
 common_args=(-c core.hooksPath=/dev/null -c core.fsmonitor=false)
 
-if [[ -n "${HAS_TOKEN}" ]]; then
-  git_version=$("${git}" "${common_args[@]}" version)
-  # Setting empty value via -c requires git 2.0.
-  # We use local config to mitigate the impact of their absence, but using git 2.0+ is best.
-  if [[ "${git_version}" == 'git version 1.'* ]]; then
+git_version=$("${git}" "${common_args[@]}" version)
+# Setting empty value via -c requires git 2.0.
+# We use local config to mitigate the impact of their absence, but using git 2.0+ is best.
+if [[ "${git_version}" == 'git version 1.'* ]]; then
+  if [[ -n "${HAS_TOKEN}" ]]; then
     warn "when using 'token' input option, it is recommended using git 2.0+ for security reasons"
-    has_c_flag_with_empty_val=''
-  else
-    has_c_flag_with_empty_val=1
   fi
+  has_c_flag_with_empty_val=''
+else
+  has_c_flag_with_empty_val=1
 fi
 
 # Disable askPass to prevent arbitrary code execution if authentication fails.
@@ -157,6 +157,16 @@ fetch_args=(
   -c "http.${repository_url}.sslVerify=true"
   -c "https.${repository_url}.sslVerify=true"
 )
+unset GIT_PROXY_COMMAND http_proxy https_proxy HTTP_PROXY HTTPS_PROXY all_proxy ALL_PROXY
+if [[ -n "${has_c_flag_with_empty_val}" ]]; then
+  fetch_args+=(
+    -c "http.${repository_url}.proxy="
+    -c "https.${repository_url}.proxy="
+  )
+else
+  "${git}" "${common_args[@]}" config --local "http.${repository_url}.proxy" ''
+  "${git}" "${common_args[@]}" config --local "https.${repository_url}.proxy" ''
+fi
 fetch_args+=(fetch --no-tags --prune --no-recurse-submodules --depth=1 origin)
 if [[ "${INPUT_REF}" == "refs/heads/"* ]]; then
   branch="${INPUT_REF#refs/heads/}"
@@ -204,8 +214,10 @@ else
 fi
 printf '::endgroup::\n'
 
-if [[ -n "${HAS_TOKEN}" ]]; then
-  if [[ -z "${has_c_flag_with_empty_val}" ]]; then
+if [[ -z "${has_c_flag_with_empty_val}" ]]; then
+  "${git}" "${common_args[@]}" config --unset --local "http.${repository_url}.proxy"
+  "${git}" "${common_args[@]}" config --unset --local "https.${repository_url}.proxy"
+  if [[ -n "${HAS_TOKEN}" ]]; then
     "${git}" "${common_args[@]}" config --unset --local credential.helper
   fi
 fi

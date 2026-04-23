@@ -75,10 +75,9 @@ On Linux, if any required tools are missing, this action will attempt to install
 On other platforms, at least the following tools are required:
 
 - bash 3.2+
-- git 1.8+ (`token` input option requires git 2.0+)
+- git 1.8+ (when using `token` input option, it is recommended using git 2.0+ for security reasons)
 
-Known environments affected in both public and private repositories by the above version requirements are CentOS 6 (EoL on 2020-11) and Ubuntu 12.04 (EoL on 2017-04) using git 1.7 (see "Install requirements" in [our CI config](https://github.com/taiki-e/checkout-action/blob/HEAD/.github/workflows/ci.yml) for example of workaround).
-Known environments affected only in private repositories by the above version requirements are CentOS 7 (EoL on 2024-06) using git 1.8 and Ubuntu 14.04 (EoL on 2019-04) using git 1.9.
+Known environments affected by the above version requirements are CentOS 6 (EoL on 2020-11) and Ubuntu 12.04 (EoL on 2017-04) using git 1.7 (see "Install requirements" in [our CI config](https://github.com/taiki-e/checkout-action/blob/HEAD/.github/workflows/ci.yml) for example of workaround).
 
 Note that what this action installs for its setup (such as above tools) is considered an implementation detail if they are installed by this action's side, and there is no guarantee that they will be available in subsequent steps, because this action is not an action for installing those tools.
 

@@ -312,15 +312,18 @@ wd=$(pwd)
 
 g "${git}" version
 git_version=$("${git}" version)
+# --local and --no-recurse-submodules require git 1.8.
+if [[ "${git_version}" == 'git version 1.'* ]] && [[ "${git_version}" != 'git version 1.8.'* ]] && [[ "${git_version}" != 'git version 1.9.'* ]]; then
+  warn "this action requires git 1.8+"
+fi
 if [[ -n "${HAS_TOKEN}" ]]; then
   # Setting empty value via -c requires git 2.0.
+  # We use local config to mitigate the impact of their absence, but using git 2.0+ is best.
   if [[ "${git_version}" == 'git version 1.'* ]]; then
-    warn "'token' input option requires git 2.0+"
-  fi
-else
-  # --local and --no-recurse-submodules require git 1.8.
-  if [[ "${git_version}" == 'git version 1.'* ]] && [[ "${git_version}" != 'git version 1.8.'* ]] && [[ "${git_version}" != 'git version 1.9.'* ]]; then
-    warn "this action requires git 1.8+"
+    warn "when using 'token' input option, it is recommended using git 2.0+ for security reasons"
+    has_c_flag_with_empty_val=''
+  else
+    has_c_flag_with_empty_val=1
   fi
 fi
 
@@ -366,12 +369,18 @@ IFS=$'\n\t'
 printf '::group::%s\n' "${cmd}"
 if [[ -n "${HAS_TOKEN}" ]]; then
   # The first credential.helper= is needed to ignore existing credential helpers.
+  if [[ -n "${has_c_flag_with_empty_val}" ]]; then
+    first_credential_helper=(-c credential.helper=)
+  else
+    "${git}" config --local credential.helper ''
+    first_credential_helper=()
+  fi
   # shellcheck disable=SC2016
   INPUT_PROTOCOL="${protocol}" \
     INPUT_HOSTNAME="${hostname}" \
     INPUT_TOKEN="${token}" \
     retry "${git}" \
-    -c 'credential.helper=' \
+    ${first_credential_helper[@]+"${first_credential_helper[@]}"} \
     -c 'credential.helper=!f() {
 protocol=""
 host=""
@@ -391,5 +400,11 @@ else
   retry "${git}" "${fetch_args[@]}" 2>&1
 fi
 printf '::endgroup::\n'
+
+if [[ -n "${HAS_TOKEN}" ]]; then
+  if [[ -z "${has_c_flag_with_empty_val}" ]]; then
+    "${git}" config --unset --local credential.helper
+  fi
+fi
 
 g retry "${git}" "${checkout_args[@]}"

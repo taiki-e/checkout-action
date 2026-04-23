@@ -131,8 +131,14 @@ case "${RUNNER_OS}" in
     ;;
 esac
 
+# Since we disable template at git init, they normally do nothing, and in compromised environments
+# (or environments that were previously compromised and only incompletely repaired) they can lead to
+# arbitrary code execution.
+# NB: Sync with pre.sh and checkout.sh.
+common_args=(-c core.hooksPath=/dev/null -c core.fsmonitor=false)
+
 if [[ -n "${HAS_TOKEN}" ]]; then
-  git_version=$("${git}" version)
+  git_version=$("${git}" "${common_args[@]}" version)
   # Setting empty value via -c requires git 2.0.
   # We use local config to mitigate the impact of their absence, but using git 2.0+ is best.
   if [[ "${git_version}" == 'git version 1.'* ]]; then
@@ -161,7 +167,7 @@ else
 fi
 
 IFS=' '
-cmd="${git} ${fetch_args[*]}"
+cmd="${git} ${common_args[*]} ${fetch_args[*]}"
 IFS=$'\n\t'
 printf '::group::%s\n' "${cmd}"
 if [[ -n "${HAS_TOKEN}" ]]; then
@@ -169,14 +175,14 @@ if [[ -n "${HAS_TOKEN}" ]]; then
   if [[ -n "${has_c_flag_with_empty_val}" ]]; then
     first_credential_helper=(-c credential.helper=)
   else
-    "${git}" config --local credential.helper ''
+    "${git}" "${common_args[@]}" config --local credential.helper ''
     first_credential_helper=()
   fi
   # shellcheck disable=SC2016
   INPUT_PROTOCOL="${protocol}" \
     INPUT_HOSTNAME="${hostname}" \
     INPUT_TOKEN="${token}" \
-    retry "${git}" \
+    retry "${git}" "${common_args[@]}" \
     ${first_credential_helper[@]+"${first_credential_helper[@]}"} \
     -c 'credential.helper=!f() {
 protocol=""
@@ -194,12 +200,12 @@ fi
 }; f' \
     "${fetch_args[@]}" 2>&1
 else
-  retry "${git}" "${fetch_args[@]}" 2>&1
+  retry "${git}" "${common_args[@]}" "${fetch_args[@]}" 2>&1
 fi
 printf '::endgroup::\n'
 
 if [[ -n "${HAS_TOKEN}" ]]; then
   if [[ -z "${has_c_flag_with_empty_val}" ]]; then
-    "${git}" config --unset --local credential.helper
+    "${git}" "${common_args[@]}" config --unset --local credential.helper
   fi
 fi

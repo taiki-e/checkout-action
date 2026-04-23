@@ -102,6 +102,10 @@ case "${RUNNER_OS}" in
     ;;
 esac
 
+# See fetch.sh.
+# NB: Sync with it.
+common_args=(-c core.hooksPath=/dev/null -c core.fsmonitor=false)
+
 checkout_args=(checkout --force)
 if [[ "${INPUT_REF}" == "refs/heads/"* ]]; then
   branch="${INPUT_REF#refs/heads/}"
@@ -111,4 +115,4 @@ else
   checkout_args+=("${INPUT_REF}")
 fi
 
-g retry "${git}" "${checkout_args[@]}"
+g retry "${git}" "${common_args[@]}" "${checkout_args[@]}"

@@ -12,7 +12,8 @@ inputs:
 runs:
   using: composite
   steps:
-    - run: |
+    - name: Prepare (non-Windows)
+      run: |
         bail() {
           printf '::error::checkout-action: %s\n' "$*"
           exit 1
@@ -62,7 +63,7 @@ runs:
           }
           if "${grep}" -Eq '^ID="?alpine"?$|^ID_LIKE=.*alpine' /etc/os-release; then
             printf '::group::Install packages required for checkout-action (bash)\n'
-            # NB: sync with main.sh
+            # NB: sync with pre.sh
             if command -v /usr/bin/sudo >/dev/null; then
               retry /usr/bin/sudo /sbin/apk --no-cache add bash
             elif command -v /usr/bin/doas >/dev/null; then
@@ -73,7 +74,7 @@ runs:
             printf '::endgroup::\n'
           elif "${grep}" -Eq '^ID="?openwrt"?$|^ID_LIKE=.*openwrt' /etc/os-release; then
             printf '::group::Install packages required for checkout-action (bash)\n'
-            # NB: sync with main.sh
+            # NB: sync with pre.sh
             # https://forum.openwrt.org/t/the-future-is-now-opkg-vs-apk/201164
             if command -v /usr/bin/apk >/dev/null; then
               if command -v /usr/bin/sudo >/dev/null; then
@@ -98,31 +99,29 @@ runs:
           fi
         fi
         if command -v /bin/bash >/dev/null; then
-          /bin/bash --noprofile --norc "${GITHUB_ACTION_PATH:?}/main.sh"
+          /bin/bash --noprofile --norc "${GITHUB_ACTION_PATH:?}/pre.sh"
         else
           bash=$(command -v bash)
           if [ -n "${HAS_TOKEN}" ]; then
             bail "bash is unavailable at standard location; found ${bash}"
           else
             warn "bash is unavailable at standard location; using ${bash}"
-            "${bash}" --noprofile --norc "${GITHUB_ACTION_PATH:?}/main.sh"
+            "${bash}" --noprofile --norc "${GITHUB_ACTION_PATH:?}/pre.sh"
           fi
         fi
       shell: /usr/bin/env -u ENV -u BASH_ENV -u CDPATH -u SHELLOPTS -u BASHOPTS /bin/sh -eu {0} # zizmor: ignore[misfeature] false positive
       env:
         # NB: Sync with Windows case.
-        INPUT_TOKEN: ${{ inputs.token }}
         # TODO: support in input options
         INPUT_REPOSITORY: ${{ github.repository }}
         INPUT_SERVER_URL: ${{ github.server_url }}
-        INPUT_SHA: ${{ github.sha }}
-        INPUT_REF: ${{ github.ref }}
         HAS_TOKEN: ${{ inputs.token && '1' || '' }}
         RUNNER_OS: ${{ runner.os }}
       if: runner.os != 'Windows'
     # Use pwsh and retry on bash startup failure to work around windows-11-arm runner bug:
     # https://github.com/actions/partner-runner-images/issues/169
-    - run: |
+    - name: Prepare (Windows)
+      run: |
         Set-StrictMode -Version Latest
         $remove_env = @('ENV','BASH_ENV','CDPATH','SHELLOPTS','BASHOPTS','BASH_FUNC_*')
         foreach ($name in $remove_env) {
@@ -145,11 +144,107 @@ runs:
         for ($i=1; $i -le 10; $i++) {
           $prev_err_action = $ErrorActionPreference
           $ErrorActionPreference = "Continue"
-          & bash --noprofile --norc "$env:GITHUB_ACTION_PATH\main.sh"
+          & bash --noprofile --norc "$env:GITHUB_ACTION_PATH\pre.sh"
           $code = $LASTEXITCODE
           $ErrorActionPreference = "$prev_err_action"
           if (Test-Path "$env:USERPROFILE\.checkout-action-init") {
-            # If bash started successfully, main.sh creates init file.
+            # If bash started successfully, pre.sh creates init file.
+            Remove-Item "$env:USERPROFILE\.checkout-action-init" -Force
+            exit $code
+          }
+          if ($i -lt 10) {
+            Write-Output "::warning::checkout-action: checkout failed due to bash startup failure (<https://github.com/actions/partner-runner-images/issues/169>); retrying..."
+          }
+        }
+        Write-Output "::error::checkout-action: checkout failed due to bash startup failure (<https://github.com/actions/partner-runner-images/issues/169>); this maybe resolved by re-running job"
+        exit 1
+      shell: pwsh
+      env:
+        # NB: Sync with non-Windows case.
+        # TODO: support in input options
+        INPUT_REPOSITORY: ${{ github.repository }}
+        INPUT_SERVER_URL: ${{ github.server_url }}
+        HAS_TOKEN: ${{ inputs.token && '1' || '' }}
+        RUNNER_OS: ${{ runner.os }}
+      if: runner.os == 'Windows'
+
+    # Fetch
+    - name: Fetch (non-Windows)
+      run: |
+        bail() {
+          printf '::error::checkout-action: %s\n' "$*"
+          exit 1
+        }
+        warn() {
+          printf '::warning::checkout-action: %s\n' "$*"
+        }
+        if command -v /bin/grep >/dev/null; then
+          grep=/bin/grep
+        elif command -v /usr/bin/grep >/dev/null; then
+          grep=/usr/bin/grep
+        else
+          grep=$(command -v grep)
+          if [ -n "${HAS_TOKEN}" ]; then
+            bail "grep is unavailable at standard location; found ${grep}"
+          fi
+        fi
+        # If /bin/sh is dash, environment variable containing % is not imported, but is fine
+        # because it also means that it will not be exposed to subprocess.
+        if /usr/bin/env | "${grep}" -Eq '^BASH_FUNC_'; then
+          bail 'bash function injection via BASH_FUNC_ environment variable is not allowed for security reasons'
+        fi
+        if command -v /bin/bash >/dev/null; then
+          /bin/bash --noprofile --norc "${GITHUB_ACTION_PATH:?}/fetch.sh"
+        else
+          bash=$(command -v bash)
+          if [ -n "${HAS_TOKEN}" ]; then
+            bail "bash is unavailable at standard location; found ${bash}"
+          else
+            warn "bash is unavailable at standard location; using ${bash}"
+            "${bash}" --noprofile --norc "${GITHUB_ACTION_PATH:?}/fetch.sh"
+          fi
+        fi
+      shell: /usr/bin/env -u ENV -u BASH_ENV -u CDPATH -u SHELLOPTS -u BASHOPTS /bin/sh -eu {0} # zizmor: ignore[misfeature] false positive
+      env:
+        # NB: Sync with Windows case.
+        INPUT_TOKEN: ${{ inputs.token }}
+        # TODO: support in input options
+        INPUT_REPOSITORY: ${{ github.repository }}
+        INPUT_SERVER_URL: ${{ github.server_url }}
+        INPUT_SHA: ${{ github.sha }}
+        INPUT_REF: ${{ github.ref }}
+        HAS_TOKEN: ${{ inputs.token && '1' || '' }}
+        RUNNER_OS: ${{ runner.os }}
+      if: runner.os != 'Windows'
+    # Use pwsh and retry on bash startup failure to work around windows-11-arm runner bug:
+    # https://github.com/actions/partner-runner-images/issues/169
+    - name: Fetch (Windows)
+      run: |
+        Set-StrictMode -Version Latest
+        $remove_env = @('ENV','BASH_ENV','CDPATH','SHELLOPTS','BASHOPTS','BASH_FUNC_*')
+        foreach ($name in $remove_env) {
+          if (Test-Path "Env:$name") { Remove-Item "Env:\$name" }
+        }
+        $bash = (Get-Command bash).Path
+        switch ($bash) {
+          "C:\Program Files\Git\bin\bash.exe" {} # default
+          "C:\msys64\usr\bin\bash.exe" {} # msys64
+          "C:\tools\cygwin\bin\bash.exe" {} # cygwin
+          default {
+            if ("$env:HAS_TOKEN" -ne "") {
+              Write-Output "::error::checkout-action: bash is unavailable at standard location; found $bash"
+              exit 1
+            }
+          }
+        }
+        for ($i=1; $i -le 10; $i++) {
+          $prev_err_action = $ErrorActionPreference
+          $ErrorActionPreference = "Continue"
+          & bash --noprofile --norc "$env:GITHUB_ACTION_PATH\fetch.sh"
+          $code = $LASTEXITCODE
+          $ErrorActionPreference = "$prev_err_action"
+          if (Test-Path "$env:USERPROFILE\.checkout-action-init") {
+            # If bash started successfully, fetch.sh creates init file.
             Remove-Item "$env:USERPROFILE\.checkout-action-init" -Force
             exit $code
           }
@@ -167,6 +262,96 @@ runs:
         INPUT_REPOSITORY: ${{ github.repository }}
         INPUT_SERVER_URL: ${{ github.server_url }}
         INPUT_SHA: ${{ github.sha }}
+        INPUT_REF: ${{ github.ref }}
+        HAS_TOKEN: ${{ inputs.token && '1' || '' }}
+        RUNNER_OS: ${{ runner.os }}
+      if: runner.os == 'Windows'
+
+    # Checkout
+    - name: Checkout (non-Windows)
+      run: |
+        bail() {
+          printf '::error::checkout-action: %s\n' "$*"
+          exit 1
+        }
+        warn() {
+          printf '::warning::checkout-action: %s\n' "$*"
+        }
+        if command -v /bin/grep >/dev/null; then
+          grep=/bin/grep
+        elif command -v /usr/bin/grep >/dev/null; then
+          grep=/usr/bin/grep
+        else
+          grep=$(command -v grep)
+          if [ -n "${HAS_TOKEN}" ]; then
+            bail "grep is unavailable at standard location; found ${grep}"
+          fi
+        fi
+        # If /bin/sh is dash, environment variable containing % is not imported, but is fine
+        # because it also means that it will not be exposed to subprocess.
+        if /usr/bin/env | "${grep}" -Eq '^BASH_FUNC_'; then
+          bail 'bash function injection via BASH_FUNC_ environment variable is not allowed for security reasons'
+        fi
+        if command -v /bin/bash >/dev/null; then
+          /bin/bash --noprofile --norc "${GITHUB_ACTION_PATH:?}/checkout.sh"
+        else
+          bash=$(command -v bash)
+          if [ -n "${HAS_TOKEN}" ]; then
+            bail "bash is unavailable at standard location; found ${bash}"
+          else
+            "${bash}" --noprofile --norc "${GITHUB_ACTION_PATH:?}/checkout.sh"
+          fi
+        fi
+      shell: /usr/bin/env -u ENV -u BASH_ENV -u CDPATH -u SHELLOPTS -u BASHOPTS /bin/sh -eu {0} # zizmor: ignore[misfeature] false positive
+      env:
+        # NB: Sync with Windows case.
+        # TODO: support in input options
+        INPUT_REF: ${{ github.ref }}
+        HAS_TOKEN: ${{ inputs.token && '1' || '' }}
+        RUNNER_OS: ${{ runner.os }}
+      if: runner.os != 'Windows'
+    # Use pwsh and retry on bash startup failure to work around windows-11-arm runner bug:
+    # https://github.com/actions/partner-runner-images/issues/169
+    - name: Checkout (Windows)
+      run: |
+        Set-StrictMode -Version Latest
+        $remove_env = @('ENV','BASH_ENV','CDPATH','SHELLOPTS','BASHOPTS','BASH_FUNC_*')
+        foreach ($name in $remove_env) {
+          if (Test-Path "Env:$name") { Remove-Item "Env:\$name" }
+        }
+        $bash = (Get-Command bash).Path
+        switch ($bash) {
+          "C:\Program Files\Git\bin\bash.exe" {} # default
+          "C:\msys64\usr\bin\bash.exe" {} # msys64
+          "C:\tools\cygwin\bin\bash.exe" {} # cygwin
+          default {
+            if ("$env:HAS_TOKEN" -ne "") {
+              Write-Output "::error::checkout-action: bash is unavailable at standard location; found $bash"
+              exit 1
+            }
+          }
+        }
+        for ($i=1; $i -le 10; $i++) {
+          $prev_err_action = $ErrorActionPreference
+          $ErrorActionPreference = "Continue"
+          & bash --noprofile --norc "$env:GITHUB_ACTION_PATH\checkout.sh"
+          $code = $LASTEXITCODE
+          $ErrorActionPreference = "$prev_err_action"
+          if (Test-Path "$env:USERPROFILE\.checkout-action-init") {
+            # If bash started successfully, checkout.sh creates init file.
+            Remove-Item "$env:USERPROFILE\.checkout-action-init" -Force
+            exit $code
+          }
+          if ($i -lt 10) {
+            Write-Output "::warning::checkout-action: checkout failed due to bash startup failure (<https://github.com/actions/partner-runner-images/issues/169>); retrying..."
+          }
+        }
+        Write-Output "::error::checkout-action: checkout failed due to bash startup failure (<https://github.com/actions/partner-runner-images/issues/169>); this maybe resolved by re-running job"
+        exit 1
+      shell: pwsh
+      env:
+        # NB: Sync with non-Windows case.
+        # TODO: support in input options
         INPUT_REF: ${{ github.ref }}
         HAS_TOKEN: ${{ inputs.token && '1' || '' }}
         RUNNER_OS: ${{ runner.os }}

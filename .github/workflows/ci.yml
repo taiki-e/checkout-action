@@ -79,7 +79,8 @@ jobs:
       - run: git ls-files
       - run: test -f ./tools/tidy.sh
       - run: ./tools/tidy.sh
-        if: startsWith(matrix.os, 'ubuntu') && matrix.os != 'ubuntu-slim'
+        # These runners doesn't have docker by default.
+        if: matrix.os != 'ubuntu-slim' && !startsWith(matrix.os, 'macos')
   # For comparison
   # actions-checkout:
   #   strategy:

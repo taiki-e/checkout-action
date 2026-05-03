@@ -44,7 +44,6 @@ common_args=(
   run --rm --init -i --user "${user}"
   --cap-drop=all
   --security-opt=no-new-privileges
-  --read-only
   --env GITHUB_ACTIONS
   --env CI
   --env CARGO_TERM_COLOR
@@ -59,6 +58,10 @@ common_args=(
   --env TIDY_EXPECTED_SHELL_FILE_COUNT
   --env TIDY_EXPECTED_DOCKER_FILE_COUNT
 )
+case "$(uname -s)" in
+  MINGW* | MSYS* | CYGWIN* | Windows_NT) ;;
+  *) common_args+=(--read-only) ;;
+esac
 # Map ignored files (e.g., .env) to dummy files.
 while IFS= read -r path; do
   if [[ -d "${path}" ]]; then

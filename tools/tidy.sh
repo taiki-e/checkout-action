@@ -59,8 +59,6 @@ common_args=(
   run --rm --init --user "${user}"
   --cap-drop=all
   --security-opt=no-new-privileges
-  # Prevents the pwsh module/cache from being placed in the current directory on podman.
-  --env HOME=/
   --env GITHUB_ACTIONS
   --env CI
   --env CARGO_TERM_COLOR
@@ -74,6 +72,12 @@ common_args=(
   --env TIDY_EXPECTED_TOML_FILE_COUNT
   --env TIDY_EXPECTED_SHELL_FILE_COUNT
   --env TIDY_EXPECTED_DOCKER_FILE_COUNT
+  # podman workaround: Prevents the pwsh module/cache from being placed in the current directory.
+  --env HOME=/
+  # podman workaround: https://github.com/containers/podman/discussions/27782
+  --env GIT_CONFIG_COUNT=1
+  --env GIT_CONFIG_KEY_0=safe.directory
+  --env GIT_CONFIG_VALUE_0="${workdir}"
 )
 case "$(uname -s)" in
   MINGW* | MSYS* | CYGWIN* | Windows_NT) ;;

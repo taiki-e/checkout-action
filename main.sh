@@ -54,7 +54,7 @@ token="${INPUT_TOKEN}"
 # via `ps -Eww` on macOS. It only reduces the risk of leaks.
 unset INPUT_TOKEN
 # This prevents tokens from being exposed to log when tracing is activated.
-unset GIT_TRACE_REDACT GIT_CURL_VERBOSE GIT_TRACE_CURL
+unset GIT_TRACE_REDACT GIT_TRACE2_REDACT GIT_CURL_VERBOSE GIT_TRACE_CURL
 
 repository_url="${INPUT_SERVER_URL}/${INPUT_REPOSITORY}"
 

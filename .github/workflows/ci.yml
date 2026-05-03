@@ -81,7 +81,7 @@ jobs:
       - run: ./tools/tidy.sh
         # ubuntu-slim doesn't have docker by default.
         if: startsWith(matrix.os, 'ubuntu') && matrix.os != 'ubuntu-slim'
-      - run: TIDY_CONTAINER_ENGINE=podman ./tools/tidy.sh
+      - run: TIDY_DOCKER_PATH=podman ./tools/tidy.sh
         # ubuntu-slim doesn't have docker by default.
         if: startsWith(matrix.os, 'ubuntu') && matrix.os != 'ubuntu-slim'
   # For comparison

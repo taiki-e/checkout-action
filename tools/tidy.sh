@@ -7,7 +7,7 @@ cd -- "$(dirname -- "$0")"/..
 
 # USAGE:
 #    GITHUB_TOKEN=$(gh auth token) ./tools/tidy.sh
-#    TIDY_CONTAINER_ENGINE=podman GITHUB_TOKEN=$(gh auth token) ./tools/tidy.sh
+#    TIDY_DOCKER_PATH=podman GITHUB_TOKEN=$(gh auth token) ./tools/tidy.sh
 #
 # Note: This script requires the following tools:
 # - docker or podman
@@ -56,7 +56,7 @@ fi
 # - https://docs.podman.io/en/latest/markdown/podman-run.1.html
 # - https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
 common_args=(
-  run --rm --init --user "${user}"
+  run --rm --init
   --cap-drop=all
   --security-opt=no-new-privileges
   --env GITHUB_ACTIONS
@@ -72,19 +72,13 @@ common_args=(
   --env TIDY_EXPECTED_TOML_FILE_COUNT
   --env TIDY_EXPECTED_SHELL_FILE_COUNT
   --env TIDY_EXPECTED_DOCKER_FILE_COUNT
-  # podman workaround: Prevents the pwsh module/cache from being placed in the current directory.
-  --env HOME=/
-  # podman workaround: https://github.com/containers/podman/discussions/27782
-  --env GIT_CONFIG_COUNT=1
-  --env GIT_CONFIG_KEY_0=safe.directory
-  --env GIT_CONFIG_VALUE_0="${workdir}"
 )
 case "$(uname -s)" in
   MINGW* | MSYS* | CYGWIN* | Windows_NT) ;;
   *) common_args+=(--read-only) ;;
 esac
-if [[ -n "${TIDY_CONTAINER_ENGINE:-}" ]]; then
-  docker="${TIDY_CONTAINER_ENGINE}"
+if [[ -n "${TIDY_DOCKER_PATH:-}" ]]; then
+  docker="${TIDY_DOCKER_PATH}"
 elif type -P docker >/dev/null; then
   docker='docker'
 elif type -P podman >/dev/null; then
@@ -92,6 +86,23 @@ elif type -P podman >/dev/null; then
 else
   bail 'this script requires docker or podman'
 fi
+help=$("${docker}" --help)
+if [[ "${help}" == *'podman'* ]] || { [[ "${help}" == *'docker'* ]] && [[ "${help}" == *'emulate'* ]]; }; then
+  # podman workarounds
+  common_args+=(
+    # Prevents the pwsh module/cache from being placed in the current directory.
+    --env HOME=/
+    # # https://github.com/containers/podman/discussions/27782
+    # --env GIT_CONFIG_COUNT=1
+    # --env GIT_CONFIG_KEY_0=safe.directory
+    # --env GIT_CONFIG_VALUE_0="${workdir}"
+  )
+elif ! "${docker}" info -f '{{println .SecurityOptions}}' | grep -Fq rootless; then
+  common_args+=(
+    --user "${user}"
+  )
+fi
+
 # Map ignored files (e.g., .env) to dummy files.
 while IFS= read -r path; do
   if [[ -d "${path}" ]]; then

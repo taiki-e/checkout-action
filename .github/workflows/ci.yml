@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   tidy:
-    uses: taiki-e/github-actions/.github/workflows/tidy.yml@3c1cac16ef654d1febb66f21f328fa167f0d2fef # main
+    uses: taiki-e/github-actions/.github/workflows/tidy.yml@68753a4331ec78cb842512fd16ae32da0c066e31 # main
     permissions:
       contents: write # for creating branch for pr
       pull-requests: write # unused (used in `codegen-automerge: true` case)
@@ -84,7 +84,7 @@ jobs:
   #     fail-fast: false
   #     matrix:
   #       os:
-  #         - ubuntu-latest
+  #         - ubuntu-24.04
   #         - macos-latest
   #         - windows-latest
   #   runs-on: ${{ matrix.os }}
@@ -163,7 +163,7 @@ jobs:
           - openwrt/rootfs:x86_64-23.05.6 # musl 1.2.4, git 2.43, opkg, EoL
           - openwrt/rootfs:x86_64-24.10.6 # musl 1.2.5, git 2.50, opkg
           - openwrt/rootfs:x86_64 # musl, apk
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     container: ${{ matrix.container }}
     steps:

@@ -185,15 +185,6 @@ else
   if [[ -n "${GIT_CONFIG_PARAMETERS:-}" ]]; then
     warn "GIT_CONFIG_PARAMETERS may be ignored for security reasons in the future"
   fi
-  if [[ -n "${PERL5LIB:-}" ]]; then
-    warn "PERL5LIB may be ignored for security reasons in the future"
-  fi
-  if [[ -n "${PERL5OPT:-}" ]]; then
-    warn "PERL5OPT may be ignored for security reasons in the future"
-  fi
-  if [[ -n "${PERL5DB:-}" ]]; then
-    warn "PERL5DB may be ignored for security reasons in the future"
-  fi
 fi
 
 # Since we disable template at git init, they normally do nothing, and in compromised environments
@@ -201,6 +192,24 @@ fi
 # arbitrary code execution.
 # NB: Sync with pre.sh and checkout.sh.
 common_args=(-c core.hooksPath=/dev/null -c core.fsmonitor=false)
+# hooksPath=/dev/null doesn't disable config-based hooks added in Git 2.54:
+# https://github.blog/open-source/git/highlights-from-git-2-54/#h-config-based-hooks
+# So, disable them individually. This is not resistant to TOCTOU attacks, but AFAIK,
+# Git 2.54 unfortunately does not provide an appropriate mechanism to prevent them.
+# https://git-scm.com/docs/githooks
+hooks=(
+  reference-transaction # ref update
+  post-index-change     # index update
+)
+for hook in "${hooks[@]}"; do
+  # git hook list fails on old version or on no hook available.
+  names=$("${git}" "${common_args[@]}" hook list "${hook}" 2>/dev/null || true)
+  if [[ -n "${names}" ]]; then
+    while IFS= read -r name; do
+      common_args+=(-c "hook.${name}.enabled=false")
+    done <<<"${names}"
+  fi
+done
 
 git_version=$("${git}" "${common_args[@]}" version)
 # Setting empty value via -c requires git 2.0.
@@ -222,6 +231,7 @@ fetch_args=(
   -c "http.${repository_url}.sslVerify=true"
   -c "https.${repository_url}.sslVerify=true"
 )
+# Block URL manipulation using proxy.
 unset GIT_PROXY_COMMAND http_proxy https_proxy HTTP_PROXY HTTPS_PROXY all_proxy ALL_PROXY
 if [[ -n "${has_c_flag_with_empty_val}" ]]; then
   fetch_args+=(

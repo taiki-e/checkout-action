@@ -7,14 +7,24 @@ cd -- "$(dirname -- "$0")"/..
 
 # USAGE:
 #    GITHUB_TOKEN=$(gh auth token) ./tools/tidy.sh
+#    TIDY_CONTAINER_ENGINE=podman GITHUB_TOKEN=$(gh auth token) ./tools/tidy.sh
 #
 # Note: This script requires the following tools:
-# - docker
+# - docker or podman
 #
 # This script is shared by projects under github.com/taiki-e, so there may also
 # be checks for files not included in this repository, but they will be skipped
 # if the corresponding files do not exist.
 # It is not intended for manual editing.
+
+bail() {
+  if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+    printf '::error::%s\n' "$*"
+  else
+    printf >&2 'error: %s\n' "$*"
+  fi
+  exit 1
+}
 
 if [[ $# -gt 0 ]]; then
   cat <<EOF
@@ -24,10 +34,11 @@ EOF
   exit 1
 fi
 
+image='ghcr.io/taiki-e/tidy'
 if [[ -n "${TIDY_DEV:-}" ]]; then
-  image="ghcr.io/taiki-e/tidy:latest"
+  image+=':latest'
 else
-  image="ghcr.io/taiki-e/tidy@sha256:c78ba09aa420feddc57ca76fca38b1d4c998a0ede37f76378f12df15a826cf59"
+  image+='@sha256:c78ba09aa420feddc57ca76fca38b1d4c998a0ede37f76378f12df15a826cf59'
 fi
 user="$(id -u):$(id -g)"
 workdir=$(pwd)
@@ -40,10 +51,16 @@ color=''
 if [[ -t 1 ]] || [[ -n "${GITHUB_ACTIONS:-}" ]]; then
   color=1
 fi
+# Refs:
+# - https://docs.docker.com/reference/cli/docker/container/run/
+# - https://docs.podman.io/en/latest/markdown/podman-run.1.html
+# - https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
 common_args=(
-  run --rm --init -i --user "${user}"
+  run --rm --init --user "${user}"
   --cap-drop=all
   --security-opt=no-new-privileges
+  # Prevents the pwsh module/cache from being placed in the current directory on podman.
+  --env HOME=/
   --env GITHUB_ACTIONS
   --env CI
   --env CARGO_TERM_COLOR
@@ -62,6 +79,15 @@ case "$(uname -s)" in
   MINGW* | MSYS* | CYGWIN* | Windows_NT) ;;
   *) common_args+=(--read-only) ;;
 esac
+if [[ -n "${TIDY_CONTAINER_ENGINE:-}" ]]; then
+  docker="${TIDY_CONTAINER_ENGINE}"
+elif type -P docker >/dev/null; then
+  docker='docker'
+elif type -P podman >/dev/null; then
+  docker='podman'
+else
+  bail 'this script requires docker or podman'
+fi
 # Map ignored files (e.g., .env) to dummy files.
 while IFS= read -r path; do
   if [[ -d "${path}" ]]; then
@@ -75,8 +101,8 @@ while IFS= read -r path; do
   fi
 done < <(git status --porcelain --ignored | grep -E '^!!' | cut -d' ' -f2)
 
-docker_run() {
-  docker "${common_args[@]}" "$@"
+run() {
+  "${docker}" "${common_args[@]}" "$@"
   code2="$?"
   if [[ ${code} -eq 0 ]] && [[ ${code2} -ne 0 ]]; then
     code="${code2}"
@@ -84,7 +110,7 @@ docker_run() {
 }
 
 set +e
-docker_run \
+run \
   --mount "type=bind,source=${workdir},target=${workdir}" --workdir "${workdir}" \
   --mount "type=bind,source=${tmp}/tmp,target=/tmp/tidy" \
   --mount "type=bind,source=${tmp}/pwsh-cache,target=/.cache/powershell" \
@@ -93,14 +119,14 @@ docker_run \
   "${image}" \
   /checks/offline.sh
 # Some good audits requires access to GitHub API.
-docker_run \
+run \
   --mount "type=bind,source=${workdir},target=${workdir},readonly" --workdir "${workdir}" \
   --mount "type=bind,source=${tmp}/zizmor-cache,target=/.cache/zizmor" \
   --env GH_TOKEN --env GITHUB_TOKEN --env ZIZMOR_GITHUB_TOKEN \
   "${image}" \
   /checks/zizmor.sh
 # We use remote dictionary.
-docker_run \
+run \
   --mount "type=bind,source=${workdir},target=${workdir},readonly" --workdir "${workdir}" \
   --mount "type=bind,source=${workdir}/.github/.cspell/project-dictionary.txt,target=${workdir}/.github/.cspell/project-dictionary.txt" \
   --mount "type=bind,source=${workdir}/.github/.cspell/rust-dependencies.txt,target=${workdir}/.github/.cspell/rust-dependencies.txt" \

@@ -86,18 +86,7 @@ elif type -P podman >/dev/null; then
 else
   bail 'this script requires docker or podman'
 fi
-help=$("${docker}" --help)
-if [[ "${help}" == *'podman'* ]] || { [[ "${help}" == *'docker'* ]] && [[ "${help}" == *'emulate'* ]]; }; then
-  # podman workarounds
-  common_args+=(
-    # Prevents the pwsh module/cache from being placed in the current directory.
-    --env HOME=/
-    # # https://github.com/containers/podman/discussions/27782
-    # --env GIT_CONFIG_COUNT=1
-    # --env GIT_CONFIG_KEY_0=safe.directory
-    # --env GIT_CONFIG_VALUE_0="${workdir}"
-  )
-elif ! "${docker}" info -f '{{println .SecurityOptions}}' | grep -Fq rootless; then
+if [[ "$("${docker}" --version)" != *'podman'* ]] && [[ "$("${docker}" info -f '{{println .SecurityOptions}}')" != *'rootless'* ]]; then
   common_args+=(
     --user "${user}"
   )

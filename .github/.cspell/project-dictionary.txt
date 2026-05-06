@@ -8,6 +8,7 @@ fastestmirror
 LASTEXITCODE
 microdnf
 mirrorlist
+nopass
 opkg
 pluginconf
 rootfs

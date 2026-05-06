@@ -15,10 +15,6 @@ on:
           - minor
           - major
 
-defaults:
-  run:
-    shell: bash --noprofile --norc -CeEuxo pipefail {0}
-
 concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
@@ -26,7 +22,7 @@ concurrency:
 jobs:
   release:
     if: github.repository_owner == 'taiki-e'
-    uses: taiki-e/github-actions/.github/workflows/action-release.yml@68753a4331ec78cb842512fd16ae32da0c066e31 # main
+    uses: taiki-e/github-actions/.github/workflows/action-release.yml@2474ed4664eb8903c151603a9d841512c069f7f6 # main
     permissions:
       contents: write # for taiki-e/create-gh-release-action
     secrets:

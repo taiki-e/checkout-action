@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   tidy:
-    uses: taiki-e/github-actions/.github/workflows/tidy.yml@68753a4331ec78cb842512fd16ae32da0c066e31 # main
+    uses: taiki-e/github-actions/.github/workflows/tidy.yml@2474ed4664eb8903c151603a9d841512c069f7f6 # main
     permissions:
       contents: write # for creating branch for pr
       pull-requests: write # unused (used in `codegen-automerge: true` case)
@@ -32,14 +32,15 @@ jobs:
       PR_TOKEN_APP_PRIVATE_KEY: ${{ secrets.PR_TOKEN_APP_PRIVATE_KEY }}
 
   test:
+    needs: tidy
     strategy:
       fail-fast: false
       matrix:
         include:
           # Test all non-deprecated images listed in https://github.com/actions/runner-images#available-images
           # and https://github.com/actions/partner-runner-images#available-images,
-          # and also msys64 & cygwin, which have different behavior than default https://github.com/taiki-e/install-action/pull/518#issuecomment-2160736760.
-          # (msys64/cygwin is not installed on arm runner https://github.com/actions/partner-runner-images/issues/88)
+          # and also MSYS2 & Cygwin, which have different behavior than default https://github.com/taiki-e/install-action/pull/518#issuecomment-2160736760.
+          # (MSYS2/Cygwin is not installed on arm runner https://github.com/actions/partner-runner-images/issues/88)
           - os: ubuntu-22.04
           - os: ubuntu-22.04-arm
           - os: ubuntu-24.04
@@ -51,122 +52,114 @@ jobs:
           - os: macos-26
           - os: windows-2022
           - os: windows-2022
-            bash: msys64
+            bash: msys2
           - os: windows-2022
             bash: cygwin
           - os: windows-2025
           - os: windows-2025
-            bash: msys64
+            bash: msys2
           - os: windows-2025
             bash: cygwin
+          - os: windows-2025-vs2026
+          - os: windows-2025-vs2026
+            bash: msys2
+          - os: windows-2025-vs2026
+            bash: cygwin
           - os: windows-11-arm
-    runs-on: ${{ matrix.os }}
+          # Test containers.
+          # Debian-based
+          - container: debian:9-slim # glibc 2.24, git 2.11, EoL, end of LTS
+          - container: debian:10-slim # glibc 2.28, git 2.20, EoL, end of LTS
+          - container: debian:11-slim # glibc 2.31, git 2.30, EoL
+          - container: debian:12-slim # glibc 2.36, git 2.39
+          - container: debian:13-slim # glibc 2.41, git 2.47
+          - container: debian:testing # glibc
+          - container: ubuntu:14.04 # glibc 2.19, git 1.9, EoL, end of ESM
+          - container: ubuntu:16.04 # glibc 2.23, git 2.7, EoL, end of ESM
+          - container: ubuntu:18.04 # glibc 2.27, git 2.17, EoL
+          - container: ubuntu:20.04 # glibc 2.31, git 2.25, EoL
+          - container: ubuntu:22.04 # glibc 2.35, git 2.34
+          - container: ubuntu:24.04 # glibc 2.39, git 2.43
+          - container: ubuntu:26.04 # glibc 2.42, git 2.53
+          - container: ubuntu:rolling # glibc
+          # Fedora/RHEL-based
+          - container: fedora:latest # glibc
+          - container: fedora:latest
+            sudo: sudo
+          - container: centos:6 # glibc 2.12, git 1.7, EoL
+          - container: centos:7 # glibc 2.17, git 1.8, EoL
+          - container: almalinux:8 # glibc 2.28, git 2.43
+          - container: almalinux:8-minimal # glibc 2.28, git 2.43
+          - container: almalinux:9 # glibc 2.34, git 2.47
+          - container: almalinux:9-minimal # glibc 2.34, git 2.47
+          - container: almalinux:10 # glibc 2.39, git 2.47
+          - container: almalinux:10-minimal # glibc 2.39, git 2.47
+          # SUSE-based
+          - container: opensuse/leap:15.0 # glibc 2.26, git 2.16, EoL
+          # Skip intermediate versions that have reached EoL by default.
+          # - container: opensuse/leap:15.1 # glibc 2.26, git 2.26, EoL
+          # - container: opensuse/leap:15.2 # glibc 2.26, git 2.26, EoL
+          # - container: opensuse/leap:15.3 # glibc 2.31, git 2.35, EoL
+          # - container: opensuse/leap:15.4 # glibc 2.31, git 2.35, EoL
+          # - container: opensuse/leap:15.5 # glibc 2.31, git 2.35, EoL
+          - container: opensuse/leap:15.6 # glibc 2.38, git 2.51
+          - container: opensuse/leap:16.0 # glibc 2.40, git 2.51
+          - container: opensuse/tumbleweed:latest # glibc
+          # apk
+          - container: alpine:3.2 # musl 1.1.11, git 2.4, EoL
+          # Skip intermediate versions that have reached EoL by default.
+          # - container: alpine:3.3 # musl 1.1.12, git 2.8, EoL
+          # - container: alpine:3.4 # musl 1.1.14, git 2.8, EoL
+          # - container: alpine:3.5 # musl 1.1.15, git 2.11, EoL
+          # - container: alpine:3.6 # musl 1.1.16, git 2.13, EoL, broken env command
+          # - container: alpine:3.7 # musl 1.1.18, git 2.15, EoL, broken env command
+          # - container: alpine:3.8 # musl 1.1.19, git 2.18, EoL
+          # - container: alpine:3.9 # musl 1.1.20, git 2.20, EoL
+          # - container: alpine:3.10 # musl 1.1.22, git 2.22, EoL
+          # - container: alpine:3.11 # musl 1.1.24, git 2.24, EoL
+          # - container: alpine:3.12 # musl 1.1.24, git 2.26, EoL
+          # - container: alpine:3.13 # musl 1.2.2, git 2.30, EoL
+          # - container: alpine:3.14 # musl 1.2.2, git 2.32, EoL
+          # - container: alpine:3.15 # musl 1.2.2, git 2.34, EoL
+          # - container: alpine:3.16 # musl 1.2.3, git 2.36, EoL
+          # - container: alpine:3.17 # musl 1.2.3, git 2.39, EoL
+          # - container: alpine:3.18 # musl 1.2.4, git 2.40, EoL
+          # - container: alpine:3.19 # musl 1.2.4, git 2.43, EoL
+          # - container: alpine:3.20 # musl 1.2.5, git 2.45, EoL
+          - container: alpine:3.21 # musl 1.2.5, git 2.47
+          - container: alpine:3.22 # musl 1.2.5, git 2.49
+          - container: alpine:3.23 # musl 1.2.5, git 2.52
+          - container: alpine:3.23
+            sudo: sudo
+          - container: alpine:3.23
+            sudo: doas
+          - container: openwrt/rootfs:x86_64-23.05.6 # musl 1.2.4, git 2.43, opkg, EoL
+          - container: openwrt/rootfs:x86_64-24.10.6 # musl 1.2.5, git 2.50, opkg
+          - container: openwrt/rootfs:x86_64 # musl, apk
+          # Others
+          - container: archlinux:latest # glibc
+    runs-on: ${{ matrix.os || 'ubuntu-24.04' }}
+    container: ${{ matrix.container }}
     timeout-minutes: 60
     steps:
       - run: |
+          set -ex
+          ldd --version 2>&1 || true
+          tail -n +1 /etc/*release || true
+          tail -n +1 /etc/*version || true
+        shell: sh
+        if: startsWith(matrix.os, 'ubuntu') || matrix.container != ''
+      - name: Setup MSYS2 bash
+        run: |
           printf '%s\n' 'C:\msys64\mingw32\bin' >>"${GITHUB_PATH}"
           printf '%s\n' 'C:\msys64\usr\bin' >>"${GITHUB_PATH}"
-        if: matrix.bash == 'msys64'
-      - run: |
+        if: matrix.bash == 'msys2'
+      - name: Setup Cygwin bash
+        run: |
           choco install --no-progress --requirechecksums cygwin
           printf '%s\n' 'C:\tools\cygwin\bin' >>"${GITHUB_PATH}"
           printf '%s\n' 'C:\tools\cygwin\usr\bin' >>"${GITHUB_PATH}"
         if: matrix.bash == 'cygwin'
-      # TODO: use the current branch instead of @main
-      - uses: taiki-e/checkout-action@main # zizmor: ignore[unpinned-uses] # For test.
-      - run: git ls-files
-      - run: test -f ./tools/tidy.sh
-      - run: ./tools/tidy.sh
-        if: startsWith(matrix.os, 'ubuntu') && matrix.os != 'ubuntu-slim'
-  # For comparison
-  # actions-checkout:
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       os:
-  #         - ubuntu-24.04
-  #         - macos-latest
-  #         - windows-latest
-  #   runs-on: ${{ matrix.os }}
-  #   timeout-minutes: 60
-  #   steps:
-  #     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-  #       with:
-  #         persist-credentials: false
-  #     - run: git ls-files
-  #     - run: test -f ./tools/tidy.sh
-  #     - run: ./tools/tidy.sh
-  #       if: startsWith(matrix.os, 'ubuntu')
-
-  test-container:
-    strategy:
-      fail-fast: false
-      matrix:
-        container:
-          - ubuntu:14.04 # glibc 2.19, git 1.9, EoL, end of ESM
-          - ubuntu:16.04 # glibc 2.23, git 2.7, EoL, end of ESM
-          - ubuntu:18.04 # glibc 2.27, git 2.17, EoL
-          - ubuntu:20.04 # glibc 2.31, git 2.25, EoL
-          - ubuntu:22.04 # glibc 2.35, git 2.34
-          - ubuntu:24.04 # glibc 2.39, git 2.43
-          - ubuntu:26.04 # glibc 2.42, git 2.53
-          - ubuntu:rolling # glibc
-          - debian:9-slim # glibc 2.24, git 2.11, EoL, end of LTS
-          - debian:10-slim # glibc 2.28, git 2.20, EoL, end of LTS
-          - debian:11-slim # glibc 2.31, git 2.30, EoL
-          - debian:12-slim # glibc 2.36, git 2.39
-          - debian:13-slim # glibc 2.41, git 2.47
-          - debian:testing # glibc
-          - fedora:latest # glibc
-          - almalinux:8 # glibc 2.28, git 2.43
-          - almalinux:8-minimal # glibc 2.28, git 2.43
-          - almalinux:9 # glibc 2.34, git 2.47
-          - almalinux:9-minimal # glibc 2.34, git 2.47
-          - almalinux:10 # glibc 2.39, git 2.47
-          - almalinux:10-minimal # glibc 2.39, git 2.47
-          - centos:6 # glibc 2.12, git 1.7, EoL
-          - centos:7 # glibc 2.17, git 1.8, EoL
-          - opensuse/leap:15.0 # glibc 2.26, git 2.16, EoL
-          # Skip intermediate versions that have reached EoL by default.
-          # - opensuse/leap:15.1 # glibc 2.26, git 2.26, EoL
-          # - opensuse/leap:15.2 # glibc 2.26, git 2.26, EoL
-          # - opensuse/leap:15.3 # glibc 2.31, git 2.35, EoL
-          # - opensuse/leap:15.4 # glibc 2.31, git 2.35, EoL
-          # - opensuse/leap:15.5 # glibc 2.31, git 2.35, EoL
-          - opensuse/leap:15.6 # glibc 2.38, git 2.51
-          - opensuse/leap:16.0 # glibc 2.40, git 2.51
-          - opensuse/tumbleweed:latest # glibc
-          - archlinux:latest # glibc
-          - alpine:3.2 # musl 1.1.11, git 2.4, EoL
-          # Skip intermediate versions that have reached EoL by default.
-          # - alpine:3.3 # musl 1.1.12, git 2.8, EoL
-          # - alpine:3.4 # musl 1.1.14, git 2.8, EoL
-          # - alpine:3.5 # musl 1.1.15, git 2.11, EoL
-          # - alpine:3.6 # musl 1.1.16, git 2.13, EoL, broken env command
-          # - alpine:3.7 # musl 1.1.18, git 2.15, EoL, broken env command
-          # - alpine:3.8 # musl 1.1.19, git 2.18, EoL
-          # - alpine:3.9 # musl 1.1.20, git 2.20, EoL
-          # - alpine:3.10 # musl 1.1.22, git 2.22, EoL
-          # - alpine:3.11 # musl 1.1.24, git 2.24, EoL
-          # - alpine:3.12 # musl 1.1.24, git 2.26, EoL
-          # - alpine:3.13 # musl 1.2.2, git 2.30, EoL
-          # - alpine:3.14 # musl 1.2.2, git 2.32, EoL
-          # - alpine:3.15 # musl 1.2.2, git 2.34, EoL
-          # - alpine:3.16 # musl 1.2.3, git 2.36, EoL
-          # - alpine:3.17 # musl 1.2.3, git 2.39, EoL
-          # - alpine:3.18 # musl 1.2.4, git 2.40, EoL
-          # - alpine:3.19 # musl 1.2.4, git 2.43, EoL
-          # - alpine:3.20 # musl 1.2.5, git 2.45, EoL
-          - alpine:3.21 # musl 1.2.5, git 2.47
-          - alpine:3.22 # musl 1.2.5, git 2.49
-          - alpine:3.23 # musl 1.2.5, git 2.52
-          - openwrt/rootfs:x86_64-23.05.6 # musl 1.2.4, git 2.43, opkg, EoL
-          - openwrt/rootfs:x86_64-24.10.6 # musl 1.2.5, git 2.50, opkg
-          - openwrt/rootfs:x86_64 # musl, apk
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    container: ${{ matrix.container }}
-    steps:
       - name: Install requirements (old debian)
         run: |
           # In Debian, the old repositories is removed from the main mirrors some time after end of LTS.
@@ -192,7 +185,7 @@ jobs:
           sed -i /etc/yum.repos.d/*.repo -e 's!^mirrorlist!#mirrorlist!' \
             -e 's!^#baseurl=http://mirror.centos.org/!baseurl=https://vault.centos.org/!'
           sed -i 's/enabled=1/enabled=0/' /etc/yum/pluginconf.d/fastestmirror.conf
-          if [[ "${CONTAINER}" == "centos:6" ]]; then
+          if [[ "${CONTAINER}" == 'centos:6' ]]; then
             # CentOS 6's git (1.7.1) has no --local/--no-recurse-submodules.
             # And even if we don't pass those flags, that version of git will not work
             # anyway due to of "fatal: Couldn't find remote ref" error.
@@ -204,32 +197,63 @@ jobs:
         env:
           CONTAINER: ${{ matrix.container }}
         if: startsWith(matrix.container, 'centos')
-      # For test
-      # - run: /usr/bin/apt-get -o Acquire::Retries=10 -qq update && /usr/bin/apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends sudo
-      #   if: startsWith(matrix.container, 'debian') || startsWith(matrix.container, 'ubuntu')
-      # - run: /usr/bin/dnf install -y sudo
-      #   if: startsWith(matrix.container, 'fedora') || (startsWith(matrix.container, 'almalinux') && !endsWith(matrix.container, '-minimal'))
-      # - run: /usr/bin/microdnf install -y sudo
-      #   if: startsWith(matrix.container, 'almalinux') && endsWith(matrix.container, '-minimal')
-      # - run: /usr/bin/yum install -y sudo
-      #   if: startsWith(matrix.container, 'centos')
-      # - run: /usr/bin/zypper install -y sudo
-      #   if: startsWith(matrix.container, 'opensuse')
-      # - run: /usr/bin/pacman -Sy --noconfirm sudo
-      #   if: startsWith(matrix.container, 'archlinux')
-      # - run: /sbin/apk --no-cache add sudo
-      #   shell: sh
-      #   if: startsWith(matrix.container, 'alpine')
-      # - run: /usr/bin/apk --no-cache add sudo
-      #   shell: sh
-      #   if: matrix.container == 'openwrt/rootfs:x86_64'
-      # - run: |
-      #     /bin/mkdir -p -- /var/lock
-      #     /bin/opkg update
-      #     /bin/opkg install sudo
-      #   shell: sh
-      #   if: startsWith(matrix.container, 'openwrt') && matrix.container != 'openwrt/rootfs:x86_64'
+      - name: Install sudo
+        run: |
+          retry() {
+            for i in 1 2 3 4 5 6 7 8 9 10; do
+              if "$@"; then
+                return 0
+              else
+                sleep "${i}"
+              fi
+            done
+            "$@"
+          }
+          case "${CONTAINER}" in
+            debian* | ubuntu*) retry /usr/bin/apt-get -o Acquire::Retries=10 -qq update && /usr/bin/apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends sudo ;;
+            almalinux*-minimal) retry /usr/bin/microdnf install -y sudo ;;
+            fedora* | almalinux*) retry /usr/bin/dnf install -y sudo ;;
+            centos*) retry /usr/bin/yum install -y sudo ;;
+            opensuse*) retry /usr/bin/zypper install -y sudo ;;
+            alpine*) retry /sbin/apk --no-cache add sudo ;;
+            openwrt/rootfs:x86_64-2[0-4].*)
+              /bin/mkdir -p -- /var/lock
+              retry /bin/opkg update
+              retry /bin/opkg install sudo
+              ;;
+            openwrt*) retry /usr/bin/apk --no-cache add sudo ;;
+            archlinux*) retry /usr/bin/pacman -Sy --noconfirm sudo ;;
+            *) exit 1 ;;
+          esac
+        shell: sh -eux {0}
+        env:
+          CONTAINER: ${{ matrix.container }}
+        if: matrix.sudo == 'sudo'
+      - name: Install doas
+        run: |
+          retry() {
+            for i in 1 2 3 4 5 6 7 8 9 10; do
+              if "$@"; then
+                return 0
+              else
+                sleep "${i}"
+              fi
+            done
+            "$@"
+          }
+          case "${CONTAINER}" in
+            alpine*) retry /sbin/apk --no-cache add doas ;;
+            *) exit 1 ;;
+          esac
+          printf 'permit nopass :wheel\n' >>/etc/doas.conf
+        shell: sh -eux {0}
+        env:
+          CONTAINER: ${{ matrix.container }}
+        if: matrix.sudo == 'doas'
       # TODO: use the current branch instead of @main
       - uses: taiki-e/checkout-action@main # zizmor: ignore[unpinned-uses] # For test.
-      - run: git ls-files
-      - run: test -f ./tools/tidy.sh
+      - run: ./tools/ci/test.sh
+      - run: ./tools/tidy.sh
+        # tools/tidy.sh uses docker, but ubuntu-slim doesn't have docker by default.
+        # macOS/Windows runners don't support nested virtualization https://github.com/orgs/community/discussions/25491
+        if: startsWith(matrix.os, 'ubuntu') && matrix.os != 'ubuntu-slim' && matrix.container == ''

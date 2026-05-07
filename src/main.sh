@@ -330,7 +330,7 @@ fi
 # Disable template to avoid needless copy of sample hooks and reduce risk of hook injections in
 # compromised environments. This option takes precedence, so there is no need to modify environment
 # variables or configs: https://git-scm.com/docs/git-init#_template_directory
-g "${git}" init --template=''
+g "${git}" -c advice.defaultBranchName=false init --template=''
 
 # error: could not lock config file C:/tools/cygwin/home/runneradmin/.gitconfig: No such file or directory
 # error: could not lock config file C:/msys64/home/runneradmin/.gitconfig: No such file or directory

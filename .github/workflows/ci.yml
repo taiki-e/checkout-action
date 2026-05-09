@@ -23,13 +23,9 @@ concurrency:
 
 jobs:
   tidy:
-    uses: taiki-e/github-actions/.github/workflows/tidy.yml@2474ed4664eb8903c151603a9d841512c069f7f6 # main
+    uses: taiki-e/github-actions/.github/workflows/tidy.yml@bb4b993445b42a3c480b92e7bc504c051c6d159b # main
     permissions:
-      contents: write # for creating branch for pr
-      pull-requests: write # unused (used in `codegen-automerge: true` case)
       security-events: write # for github/codeql-action/*
-    secrets:
-      PR_TOKEN_APP_PRIVATE_KEY: ${{ secrets.PR_TOKEN_APP_PRIVATE_KEY }}
 
   test:
     needs: tidy
@@ -37,116 +33,196 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # --------------------------------------------------------------------
+          # GitHub-hosted runners
           # Test all non-deprecated images listed in https://github.com/actions/runner-images#available-images
           # and https://github.com/actions/partner-runner-images#available-images,
           # and also MSYS2 & Cygwin, which have different behavior than default https://github.com/taiki-e/install-action/pull/518#issuecomment-2160736760.
           # (MSYS2/Cygwin is not installed on arm runner https://github.com/actions/partner-runner-images/issues/88)
-          - os: ubuntu-22.04
-          - os: ubuntu-22.04-arm
           - os: ubuntu-24.04
           - os: ubuntu-24.04-arm
+          - os: ubuntu-22.04
+          - os: ubuntu-22.04-arm
           - os: ubuntu-slim
-          - os: macos-14
+          - os: macos-26
           - os: macos-15
           - os: macos-15-intel
-          - os: macos-26
-          - os: windows-2022
-          - os: windows-2022
-            bash: msys2
-          - os: windows-2022
-            bash: cygwin
+          - os: macos-14
           - os: windows-2025
           - os: windows-2025
             bash: msys2
           - os: windows-2025
             bash: cygwin
-          - os: windows-2025-vs2026
-          - os: windows-2025-vs2026
+          - os: windows-2022
+          - os: windows-2022
             bash: msys2
-          - os: windows-2025-vs2026
+          - os: windows-2022
             bash: cygwin
           - os: windows-11-arm
-          # Test containers.
+          # --------------------------------------------------------------------
+          # Containers
+          # See also https://github.com/taiki-e/dockerfiles/blob/HEAD/tools/container-info.sh.
+          # --------------------------------------------------------------------
           # Debian-based
-          - container: debian:9-slim # glibc 2.24, git 2.11, EoL, end of LTS
-          - container: debian:10-slim # glibc 2.28, git 2.20, EoL, end of LTS
-          - container: debian:11-slim # glibc 2.31, git 2.30, EoL
-          - container: debian:12-slim # glibc 2.36, git 2.39
-          - container: debian:13-slim # glibc 2.41, git 2.47
+          # https://hub.docker.com/_/debian
+          # https://hub.docker.com/r/debian/eol
+          - container: debian:sid # glibc
           - container: debian:testing # glibc
-          - container: ubuntu:14.04 # glibc 2.19, git 1.9, EoL, end of ESM
-          - container: ubuntu:16.04 # glibc 2.23, git 2.7, EoL, end of ESM
-          - container: ubuntu:18.04 # glibc 2.27, git 2.17, EoL
-          - container: ubuntu:20.04 # glibc 2.31, git 2.25, EoL
-          - container: ubuntu:22.04 # glibc 2.35, git 2.34
-          - container: ubuntu:24.04 # glibc 2.39, git 2.43
-          - container: ubuntu:26.04 # glibc 2.42, git 2.53
-          - container: ubuntu:rolling # glibc
-          # Fedora/RHEL-based
-          - container: fedora:latest # glibc
-          - container: fedora:latest
+          - container: debian:13-slim # glibc 2.41, git 2.47
+          - container: debian:13-slim
             sudo: sudo
-          - container: centos:6 # glibc 2.12, git 1.7, EoL
+          - container: debian:12-slim # glibc 2.36, git 2.39
+          - container: debian:11-slim # glibc 2.31, git 2.30, EoL
+          - container: debian:10-slim # glibc 2.28, git 2.20, EoL, end of LTS
+          - container: debian:9-slim # glibc 2.24, git 2.11, EoL, end of LTS
+          - container: debian/eol:jessie-slim # 8, glibc 2.19, git 2.1, EoL, end of LTS
+          # - container: debian/eol:wheezy-slim # 7, glibc 2.13, git 1.7, EoL, end of LTS, git too old
+          # - container: debian/eol:squeeze-slim # 6, glibc 2.11.3, git 1.7, EoL, end of LTS, git too old
+          # - container: debian/eol:lenny-slim # 5, glibc 2.7, git ?, EoL, apt-get fail
+          # - container: debian/eol:etch-slim # 4, glibc 2.3.6, git ?, EoL, apt-get has no --no-install-recommends
+          # - container: debian/eol:sarge-slim # 3.1, glibc 2.3.2, git ?, EoL, apt-get has no --no-install-recommends
+          # - container: debian/eol:woody-slim # 3.0, glibc 2.2.5, git ?, EoL, "Error response from daemon: container <hash> is not running"
+          # - container: debian/eol:potato-slim # 2.2, glibc 2.1.3, git ?, EoL, "Error response from daemon: container <hash> is not running"
+          # - container: debian/eol:slink-slim # 2.1, glibc 2.0.7, git ?, EoL, "Error response from daemon: container <hash> is not running"
+          # debian:6 image uses legacy image format (use debian/eol images instead).
+          # debian/eol:hamm-slim (2.0) image is not available.
+          # https://hub.docker.com/_/ubuntu
+          - container: ubuntu:devel # glibc
+          - container: ubuntu:rolling # glibc
+          - container: ubuntu:26.04 # glibc 2.43, git 2.53
+          - container: ubuntu:26.04
+            sudo: sudo
+          - container: ubuntu:24.04 # glibc 2.39, git 2.43
+          - container: ubuntu:22.04 # glibc 2.35, git 2.34
+          - container: ubuntu:20.04 # glibc 2.31, git 2.25, EoL
+          - container: ubuntu:18.04 # glibc 2.27, git 2.17, EoL
+          - container: ubuntu:16.04 # glibc 2.23, git 2.7, EoL, end of ESM
+          - container: ubuntu:14.04 # glibc 2.19, git 1.9, EoL, end of ESM
+          # - container: ubuntu:12.04 # glibc 2.15, git 1.7, EoL, end of ESM, git too old
+          # ubuntu:10.04 image uses legacy image format.
+          # --------------------------------------------------------------------
+          # Fedora/RHEL-based
+          # https://hub.docker.com/_/fedora
+          - container: fedora:rawhide # glibc
+          - container: fedora:44 # glibc 2.43, git 2.54
+          - container: fedora:44
+            sudo: sudo
+          - container: fedora:43 # glibc 2.42, git 2.54
+          - container: fedora:42 # glibc 2.41, git 2.54
+          # Skip intermediate versions that have reached EoL by default.
+          # - container: fedora:41 # glibc 2.40, git ?, EoL
+          # - container: fedora:40 # glibc 2.39, git ?, EoL
+          # - container: fedora:39 # glibc 2.38, git ?, EoL
+          # - container: fedora:38 # glibc 2.37, git ?, EoL
+          # - container: fedora:37 # glibc 2.36, git ?, EoL
+          # - container: fedora:36 # glibc 2.35, git ?, EoL
+          # - container: fedora:35 # glibc 2.34, git ?, EoL
+          # - container: fedora:34 # glibc 2.33, git ?, EoL
+          # - container: fedora:33 # glibc 2.32, git ?, EoL
+          # - container: fedora:32 # glibc 2.31, git ?, EoL
+          # - container: fedora:31 # glibc 2.30, git ?, EoL
+          # - container: fedora:30 # glibc 2.29, git ?, EoL
+          # - container: fedora:29 # glibc 2.28, git ?, EoL
+          # - container: fedora:28 # glibc 2.27, git ?, EoL
+          # - container: fedora:27 # glibc 2.26, git ?, EoL
+          # - container: fedora:26 # glibc 2.25, git ?, EoL
+          # - container: fedora:25 # glibc 2.24, git ?, EoL
+          # - container: fedora:24 # glibc 2.23, git ?, EoL
+          # - container: fedora:23 # glibc 2.22, git ?, EoL
+          # - container: fedora:22 # glibc 2.21, git 2.4, EoL
+          # - container: fedora:21 # glibc 2.20, git 2.1, EoL, "fatal: unable to access 'https://github.com/taiki-e/checkout-action/': Peer's Certificate issuer is not recognized." with git fetch
+          - container: fedora:20 # glibc 2.18, git 1.9, EoL
+          # fedora:19 image is not available
+          # https://hub.docker.com/_/centos
           - container: centos:7 # glibc 2.17, git 1.8, EoL
-          - container: almalinux:8 # glibc 2.28, git 2.43
-          - container: almalinux:8-minimal # glibc 2.28, git 2.43
-          - container: almalinux:9 # glibc 2.34, git 2.47
-          - container: almalinux:9-minimal # glibc 2.34, git 2.47
+          - container: centos:6 # glibc 2.12, git 1.7, EoL
+          # - container: centos:5 # glibc 2.5, git ?, EoL, "M2Crypto.SSL.SSLError: sslv3 alert handshake failure" error with yum
+          # centos:4 image is not available
+          # https://hub.docker.com/_/almalinux
           - container: almalinux:10 # glibc 2.39, git 2.47
           - container: almalinux:10-minimal # glibc 2.39, git 2.47
+          - container: almalinux:9 # glibc 2.34, git 2.47
+          - container: almalinux:9-minimal # glibc 2.34, git 2.47
+          - container: almalinux:8 # glibc 2.28, git 2.43
+          - container: almalinux:8-minimal # glibc 2.28, git 2.43
+          # --------------------------------------------------------------------
           # SUSE-based
-          - container: opensuse/leap:15.0 # glibc 2.26, git 2.16, EoL
-          # Skip intermediate versions that have reached EoL by default.
-          # - container: opensuse/leap:15.1 # glibc 2.26, git 2.26, EoL
-          # - container: opensuse/leap:15.2 # glibc 2.26, git 2.26, EoL
-          # - container: opensuse/leap:15.3 # glibc 2.31, git 2.35, EoL
-          # - container: opensuse/leap:15.4 # glibc 2.31, git 2.35, EoL
-          # - container: opensuse/leap:15.5 # glibc 2.31, git 2.35, EoL
-          - container: opensuse/leap:15.6 # glibc 2.38, git 2.51
-          - container: opensuse/leap:16.0 # glibc 2.40, git 2.51
+          # https://hub.docker.com/r/opensuse/tumbleweed
+          # https://hub.docker.com/r/opensuse/leap
+          # https://hub.docker.com/r/opensuse/archive
           - container: opensuse/tumbleweed:latest # glibc
-          # apk
-          - container: alpine:3.2 # musl 1.1.11, git 2.4, EoL
+          - container: opensuse/leap:16.0 # glibc 2.40, git 2.51
+          - container: opensuse/leap:15.6 # glibc 2.38, git 2.51
           # Skip intermediate versions that have reached EoL by default.
-          # - container: alpine:3.3 # musl 1.1.12, git 2.8, EoL
-          # - container: alpine:3.4 # musl 1.1.14, git 2.8, EoL
-          # - container: alpine:3.5 # musl 1.1.15, git 2.11, EoL
-          # - container: alpine:3.6 # musl 1.1.16, git 2.13, EoL, broken env command
-          # - container: alpine:3.7 # musl 1.1.18, git 2.15, EoL, broken env command
-          # - container: alpine:3.8 # musl 1.1.19, git 2.18, EoL
-          # - container: alpine:3.9 # musl 1.1.20, git 2.20, EoL
-          # - container: alpine:3.10 # musl 1.1.22, git 2.22, EoL
-          # - container: alpine:3.11 # musl 1.1.24, git 2.24, EoL
-          # - container: alpine:3.12 # musl 1.1.24, git 2.26, EoL
-          # - container: alpine:3.13 # musl 1.2.2, git 2.30, EoL
-          # - container: alpine:3.14 # musl 1.2.2, git 2.32, EoL
-          # - container: alpine:3.15 # musl 1.2.2, git 2.34, EoL
-          # - container: alpine:3.16 # musl 1.2.3, git 2.36, EoL
-          # - container: alpine:3.17 # musl 1.2.3, git 2.39, EoL
-          # - container: alpine:3.18 # musl 1.2.4, git 2.40, EoL
-          # - container: alpine:3.19 # musl 1.2.4, git 2.43, EoL
-          # - container: alpine:3.20 # musl 1.2.5, git 2.45, EoL
-          - container: alpine:3.21 # musl 1.2.5, git 2.47
-          - container: alpine:3.22 # musl 1.2.5, git 2.49
+          # - container: opensuse/leap:15.5 # glibc 2.31, git 2.35, EoL
+          # - container: opensuse/leap:15.4 # glibc 2.31, git 2.35, EoL
+          # - container: opensuse/leap:15.3 # glibc 2.31, git 2.35, EoL
+          # - container: opensuse/leap:15.2 # glibc 2.26, git 2.26, EoL
+          # - container: opensuse/leap:15.1 # glibc 2.26, git 2.26, EoL
+          # - container: opensuse/leap:15.0 # glibc 2.26, git 2.16, EoL
+          # - container: opensuse/archive:42.3 # glibc 2.?, git ?, EoL
+          # - container: opensuse/archive:42.2 # glibc 2.?, git ?, EoL
+          # - container: opensuse/archive:42.1 # glibc 2.19, bash 4.2, git ?, EoL, zypper fail
+          - container: opensuse/archive:13.2 # glibc 2.19, bash 4.2, git 2.1, EoL
+          # opensuse/archive:13.1 image uses legacy image format.
+          # --------------------------------------------------------------------
+          # apk
+          # https://hub.docker.com/_/alpine
+          - container: alpine:edge
           - container: alpine:3.23 # musl 1.2.5, git 2.52
           - container: alpine:3.23
             sudo: sudo
           - container: alpine:3.23
             sudo: doas
-          - container: openwrt/rootfs:x86_64-23.05.6 # musl 1.2.4, git 2.43, opkg, EoL
-          - container: openwrt/rootfs:x86_64-24.10.6 # musl 1.2.5, git 2.50, opkg
-          - container: openwrt/rootfs:x86_64 # musl, apk
+          - container: alpine:3.22 # musl 1.2.5, git 2.49
+          - container: alpine:3.21 # musl 1.2.5, git 2.47
+          # Skip intermediate versions that have reached EoL by default.
+          # - container: alpine:3.20 # musl 1.2.5, git 2.45, EoL
+          # - container: alpine:3.19 # musl 1.2.4, git 2.43, EoL
+          # - container: alpine:3.18 # musl 1.2.4, git 2.40, EoL
+          # - container: alpine:3.17 # musl 1.2.3, git 2.39, EoL
+          # - container: alpine:3.16 # musl 1.2.3, git 2.36, EoL
+          # - container: alpine:3.15 # musl 1.2.2, git 2.34, EoL
+          # - container: alpine:3.14 # musl 1.2.2, git 2.32, EoL
+          # - container: alpine:3.13 # musl 1.2.2, git 2.30, EoL
+          # - container: alpine:3.12 # musl 1.1.24, git 2.26, EoL
+          # - container: alpine:3.11 # musl 1.1.24, git 2.24, EoL
+          # - container: alpine:3.10 # musl 1.1.22, git 2.22, EoL
+          # - container: alpine:3.9 # musl 1.1.20, git 2.20, EoL
+          # - container: alpine:3.8 # musl 1.1.19, git 2.18, EoL
+          # - container: alpine:3.7 # musl 1.1.18, git 2.15, EoL, broken env command
+          # - container: alpine:3.6 # musl 1.1.16, git 2.13, EoL, broken env command
+          # - container: alpine:3.5 # musl 1.1.15, git 2.11, EoL
+          # - container: alpine:3.4 # musl 1.1.14, git 2.8, EoL
+          # - container: alpine:3.3 # musl 1.1.12, git 2.8, EoL
+          - container: alpine:3.2 # musl 1.1.11, git 2.4, EoL
+          # - container: alpine:3.1 # musl 1.1.5, git ?, EoL, apk --no-cache not supported
+          # alpine:3.0 image is not available
+          # https://hub.docker.com/r/openwrt/rootfs
+          - container: openwrt/rootfs:x86-64 # musl, apk
+          - container: openwrt/rootfs:x86-64-25.12.3 # musl ?, git ?, apk
+          - container: openwrt/rootfs:x86-64-24.10.6 # musl 1.2.5, git 2.50, opkg
+          # Skip intermediate versions that have reached EoL by default.
+          # - container: openwrt/rootfs:x86-64-23.05.6 # musl 1.2.4, git 2.43, opkg, EoL
+          # - container: openwrt/rootfs:x86-64-22.03.7 # musl ?, git ?, opkg, EoL
+          # - container: openwrt/rootfs:x86-64-21.02.7 # musl ?, git ?, opkg, EoL
+          # - container: openwrt/rootfs:x86-64-19.07.10 # musl ?, git ?, opkg, EoL
+          - container: openwrt/rootfs:x86-64-18.06.9 # musl ?, git ?, opkg, EoL
+          # openwrt/rootfs:x86-64-17.01.* image is not available
+          # --------------------------------------------------------------------
           # Others
+          # https://hub.docker.com/_/archlinux
           - container: archlinux:latest # glibc
     runs-on: ${{ matrix.os || 'ubuntu-24.04' }}
     container: ${{ matrix.container }}
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
-      - run: |
+      - name: Show environment (Linux)
+        run: |
           set -ex
-          ldd --version 2>&1 || true
-          tail -n +1 /etc/*release || true
-          tail -n +1 /etc/*version || true
+          ldd --version >&2 || true
+          tail -n +1 /etc/*release >&2 || true
+          tail -n +1 /etc/*version >&2 || true
         shell: sh
         if: startsWith(matrix.os, 'ubuntu') || matrix.container != ''
       - name: Setup MSYS2 bash
@@ -160,15 +236,16 @@ jobs:
           printf '%s\n' 'C:\tools\cygwin\bin' >>"${GITHUB_PATH}"
           printf '%s\n' 'C:\tools\cygwin\usr\bin' >>"${GITHUB_PATH}"
         if: matrix.bash == 'cygwin'
-      - name: Install requirements (old debian)
+      - name: Install requirements (old Debian)
         run: |
           # In Debian, the old repositories is removed from the main mirrors some time after end of LTS.
-          codename=$(grep -E '^VERSION_CODENAME=' /etc/os-release | cut -d= -f2)
+          # shellcheck source=/dev/null
+          codename=$(. /etc/os-release; printf '%s\n' "${VERSION_CODENAME}")
           sed -i /etc/apt/sources.list -e 's/deb.debian.org/archive.debian.org/g' \
             -e 's|security.debian.org|archive.debian.org/|g' \
             -e "/${codename}-updates/d"
         if: startsWith(matrix.container, 'debian:9') || startsWith(matrix.container, 'debian:10')
-      - name: Install requirements (centos)
+      - name: Install requirements (CentOS)
         run: |
           retry() {
             for i in {1..10}; do
@@ -241,6 +318,7 @@ jobs:
             done
             "$@"
           }
+          # https://repology.org/project/opendoas/versions
           case "${CONTAINER}" in
             alpine*) retry /sbin/apk --no-cache add doas ;;
             *) exit 1 ;;

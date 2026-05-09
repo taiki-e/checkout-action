@@ -6,10 +6,16 @@ trap -- 'printf >&2 "%s\n" "${0##*/}: trapped SIGINT"; exit 1' SIGINT
 
 set -x
 
-expected=22
-ls_files=$(git ls-files)
+bash --version >&2
+sleep --version >&2
+grep --version >&2
+sed --version >&2 || true
+awk --version >&2 || true
+
+expected='^ *22$'
+count=$(git ls-files | LC_ALL=C wc -l)
 # BSD wc's -l emits spaces before number.
-[[ "$(LC_ALL=C wc -l <<<"${ls_files}" | sed -E 's/^[\t ]*//g')" == "${expected}" ]] || exit 1
+[[ "${count}" =~ ${expected} ]] || exit 1
 
 log=$(git log --graph --decorate --oneline)
 # old git prints 'HEAD, origin/ref, ref' instead of 'HEAD -> ref, origin/ref'.

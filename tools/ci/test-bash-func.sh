@@ -6,10 +6,14 @@ IFS=$'\n\t'
 trap -- 'printf >&2 "%s\n" "${0##*/}: trapped SIGINT"; exit 1' SIGINT
 cd -- "$(dirname -- "$0")"/../..
 
-# Test BASH_FUNC_*%% and related.
+# Test BASH_FUNC_*%% related behavior and some functions used in action.
 #
-# See action.yml for more.
+# See action.yml for more about BASH_FUNC_*%%.
 
+bail() {
+  printf '::error::%s\n' "$*"
+  exit 1
+}
 # Use binaries available at standard location to prevent path interception.
 # See resolve_path in action.yml for more.
 # NB: Sync with it.
@@ -320,3 +324,52 @@ protocol=https
 host=not.github.com
 ')
 [[ "${res}" != *'password=dummy'* ]] || false
+
+# test hex generation used in rand function in main.sh.
+set -o posix
+# NB: Sync with main.sh.
+# Refs: https://stackoverflow.com/a/34329799
+od=$(resolve_path od)
+[[ -n "${od}" ]] || od=$(type -P od)
+od_hex() {
+  rand=$("${od}" -vN64 -An -tx1)
+  rand="${rand//[$'\n' ]/}"
+  if [[ "${#rand}" -ne 128 ]]; then
+    return 1
+  fi
+}
+hexdump=$(resolve_path hexdump)
+[[ -n "${hexdump}" ]] || hexdump=$(type -P hexdump || true)
+[[ -n "${hexdump}" ]] || [[ ! -x "C:\msys64\usr\bin\hexdump.exe" ]] || hexdump="C:\msys64\usr\bin\hexdump.exe"
+hexdump_hex() {
+  rand=$("${hexdump}" -vn64 -e ' /1 "%02x"')
+  if [[ "${#rand}" -ne 128 ]]; then
+    return 1
+  fi
+}
+tmp=$(mktemp)
+trap -- 'rm -f -- "${tmp:?}"' EXIT
+test_hex() {
+  od_hex <"${tmp}"
+  res="${rand}"
+  if [[ -n "${hexdump}" ]]; then
+    hexdump_hex <"${tmp}"
+    if [[ "${res}" != "${rand}" ]]; then
+      exit 1
+    fi
+  else
+    case "${CONTAINER:-}" in
+      windows-11-arm) ;;
+      *) bail "missing hexdump" ;;
+    esac
+  fi
+}
+printf 'cfdc8041987654c6ae1c40bdaa4da84ad7f6dd8a275f506403493d37d704ea647bb7f1ed834e3b21b57ae92840f8d3641a7947ecb53ae6fa1d2a658676613d620' >|"${tmp}"
+test_hex
+if [[ "${res}" != "63666463383034313938373635346336616531633430626461613464613834616437663664643861323735663530363430333439336433376437303465613634" ]]; then
+  exit 1
+fi
+for _i in {0..200}; do
+  head -c 128 </dev/urandom >|"${tmp}"
+  test_hex
+done

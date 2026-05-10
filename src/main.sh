@@ -164,6 +164,13 @@ case "${RUNNER_OS}" in
     ;;
   *) bail "unrecognized OS '${RUNNER_OS}'" ;;
 esac
+if [[ -n "${HAS_TOKEN}" ]]; then
+  od=$(resolve_path od)
+  hexdump=$(resolve_path hexdump)
+  if [[ -z "${od}" ]] && [[ -z "${hexdump}" ]]; then
+    bail "neither od nor hexdump is unavailable at standard location; aborting due to security reasons because 'token' input option is set"
+  fi
+fi
 
 wd="${PWD}"
 
@@ -257,24 +264,71 @@ else
   "${git}" "${common_args[@]}" config --local "http.${repository_url}.proxy" ''
   "${git}" "${common_args[@]}" config --local "https.${repository_url}.proxy" ''
 fi
-checkout_args=()
-fetch_args+=(fetch --no-tags --prune --no-recurse-submodules --depth=1 origin)
-checkout_args+=(checkout --force)
+fetch_args+=(fetch --no-tags --prune --no-recurse-submodules --depth=1)
+fetch_refs=()
+checkout_args=(checkout --force)
 if [[ "${INPUT_REF}" == "refs/heads/"* ]]; then
   branch="${INPUT_REF#refs/heads/}"
   remote_ref="refs/remotes/origin/${branch}"
-  fetch_args+=("+${INPUT_SHA}:${remote_ref}")
+  fetch_refs+=("+${INPUT_SHA}:${remote_ref}")
   checkout_args+=(-B "${branch}" "${remote_ref}")
 else
-  fetch_args+=("+${INPUT_SHA}:${INPUT_REF}")
+  fetch_refs+=("+${INPUT_SHA}:${INPUT_REF}")
   checkout_args+=("${INPUT_REF}")
 fi
 
 IFS=' '
-cmd="${git} ${common_args[*]} ${fetch_args[*]}"
+cmd="${git} ${common_args[*]} ${fetch_args[*]} origin ${fetch_refs[*]}"
 IFS=$'\n\t'
 printf '::group::%s\n' "${cmd}"
 if [[ -n "${HAS_TOKEN}" ]]; then
+  # In url.*.insteadOf, global/local config is preferred over -c when URL is
+  # the same. (In most options, -c is preferred over global/local config when
+  # URL is the same.)
+  # So using a sufficiently long random value as URL placeholder and replacing
+  # it with -c option, to mitigate the risk of token leaks caused by compromised
+  # global/local config. Since there is a (short) interval between the command
+  # being exposed in /proc/*/cmdline and the config being resolved, it is
+  # technically possible for a malicious url.*.insteadOf to inject local/global
+  # config, causing a malicious repository hosted on the same host to be checked
+  # out (though this is hard because we specify SHA in refspec). Anyway, thanks
+  # to credential helper's hostname verification, sending credentials to a
+  # malicious host should be prevented.
+  rand() {
+    # od is probably the most common, but it isn’t installed by default on OpenWrt.
+    # NB: Sync with test in tools/ci/test-bash-func.sh.
+    # Refs: https://stackoverflow.com/a/34329799
+    if [[ -n "${od}" ]]; then
+      rand=$("${od}" -vN64 -An -tx1 /dev/urandom)
+      rand="${rand//[$'\n' ]/}"
+      if [[ "${#rand}" -eq 128 ]]; then
+        return
+      fi
+    fi
+    if [[ -n "${hexdump}" ]]; then
+      rand=$("${hexdump}" -vn64 -e ' /1 "%02x"' /dev/urandom)
+      if [[ "${#rand}" -eq 128 ]]; then
+        return
+      fi
+    fi
+    bail "internal error: failed to generate random value"
+  }
+  retry_fetch() {
+    for i in {1..10}; do
+      rand
+      if INPUT_TOKEN="${token}" \
+        "$@" -c "url.${repository_url}.insteadOf=${rand}" \
+        "${fetch_args[@]}" "${rand}" "${fetch_refs[@]}" 2>&1; then
+        return 0
+      else
+        sleep "${i}"
+      fi
+    done
+    rand
+    INPUT_TOKEN="${token}" \
+      "$@" -c "url.${repository_url}.insteadOf=${rand}" \
+      "${fetch_args[@]}" "${rand}" "${fetch_refs[@]}" 2>&1
+  }
   # The first credential.helper= is needed to ignore existing credential helpers.
   if [[ -n "${has_c_flag_with_empty_val}" ]]; then
     first_credential_helper=(-c credential.helper=)
@@ -287,8 +341,7 @@ if [[ -n "${HAS_TOKEN}" ]]; then
   # shellcheck disable=SC2016
   INPUT_PROTOCOL="${protocol}" \
     INPUT_HOSTNAME="${hostname}" \
-    INPUT_TOKEN="${token}" \
-    retry "${git}" "${common_args[@]}" \
+    retry_fetch "${git}" "${common_args[@]}" \
     ${first_credential_helper[@]+"${first_credential_helper[@]}"} \
     -c credential."${repository_url}".helper='!f() {
 protocol=""
@@ -302,10 +355,9 @@ done
 if [ "${protocol}" = "${INPUT_PROTOCOL}" ] && [ "${host}" = "${INPUT_HOSTNAME}" ]; then
   printf "protocol=%s\nhost=%s\nusername=x-access-token\npassword=%s\n" "${INPUT_PROTOCOL}" "${INPUT_HOSTNAME}" "${INPUT_TOKEN}"
 fi
-}; f' \
-    "${fetch_args[@]}" 2>&1
+}; f'
 else
-  retry "${git}" "${common_args[@]}" "${fetch_args[@]}" 2>&1
+  retry "${git}" "${common_args[@]}" "${fetch_args[@]}" origin "${fetch_refs[@]}" 2>&1
 fi
 printf '::endgroup::\n'
 

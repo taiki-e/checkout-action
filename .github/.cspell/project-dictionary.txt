@@ -7,11 +7,14 @@ artixlinux
 ASKPASS
 AWKLIBPATH
 AWKPATH
+bsdextrautils
+bsdmainutils
 Cachy
 cachyos
 CDPATH
 chainguard
 clangarm
+cmdline
 coreutils
 cygdrive
 devuan
@@ -20,6 +23,7 @@ DYLD
 fastestmirror
 FPATH
 gnused
+hexdump
 HWCAP
 kalilinux
 LASTEXITCODE
@@ -36,6 +40,7 @@ opkg
 oraclelinux
 pico
 pluginconf
+refspec
 rockylinux
 rootfs
 runneradmin
@@ -44,6 +49,7 @@ sslv
 systeminfo
 tdnf
 TOCTOU
+urandom
 USERPROFILE
 webrsync
 windriver

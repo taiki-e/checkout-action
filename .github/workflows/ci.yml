@@ -402,7 +402,7 @@ jobs:
             centos*) retry /usr/bin/yum install -y sudo ;;
             opensuse*) retry /usr/bin/zypper install -y sudo ;;
             alpine*) retry /sbin/apk --no-cache add sudo ;;
-            openwrt/rootfs:x86_64-2[0-4].*)
+            openwrt/rootfs:x86-64-1[0-9].* | openwrt/rootfs:x86-64-2[0-4].*)
               /bin/mkdir -p -- /var/lock
               retry /bin/opkg update
               retry /bin/opkg install sudo
@@ -441,7 +441,7 @@ jobs:
         if: matrix.sudo == 'doas'
       # TODO: use the current branch instead of @main
       - uses: taiki-e/checkout-action@main # zizmor: ignore[unpinned-uses] # For test.
-      - name: Install sed/awk for test
+      - name: Install requirements for test
         run: |
           retry() {
             for i in 1 2 3 4 5 6 7 8 9 10; do
@@ -454,18 +454,26 @@ jobs:
             "$@"
           }
           case "${CONTAINER}" in
+            debian/eol* | debian:9-* | debian:10-* | ubuntu:20.* | ubuntu:1[0-9].*)  retry /usr/bin/apt-get -o Acquire::Retries=10 -qq update && retry /usr/bin/apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends bsdmainutils ;;
+            ubuntu-slim) retry /usr/bin/sudo /usr/bin/apt-get -o Acquire::Retries=10 -qq update && retry /usr/bin/sudo /usr/bin/apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends bsdextrautils ;;
+            debian* | ubuntu* | devuan* | kalilinux* | ghcr.io/vanilla-os/pico:*) retry /usr/bin/apt-get -o Acquire::Retries=10 -qq update && /usr/bin/apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends bsdextrautils ;;
             opensuse/tumbleweed:*) retry /usr/bin/zypper install -y awk ;;
-            nixos/nix:*) retry /root/.nix-profile/bin/nix-env -i gawk gnused ;;
-            openmandriva/cooker:*) retry /usr/bin/dnf install -y awk ;;
+            nixos/nix:*) retry /root/.nix-profile/bin/nix-env -i gawk gnused util-linux ;;
+            openmandriva/cooker:*) retry /usr/bin/dnf install -y awk util-linux ;;
+            windriver/wrlx-image:lts*-minimal) retry /usr/bin/dnf install -y coreutils util-linux-hexdump ;;
+            windriver/*) retry /usr/bin/dnf install -y util-linux-hexdump ;;
             photon:1.0) retry /usr/bin/tdnf install -y gawk sed ;;
-            photon:*) retry /usr/bin/tdnf install -y gawk ;;
+            photon:*) retry /usr/bin/tdnf install -y gawk util-linux ;;
+            openwrt/rootfs:x86-64-1[0-9].* | openwrt/rootfs:x86-64-2[0-4].*) retry /bin/opkg install coreutils-od ;;
+            openwrt*) retry /usr/bin/apk --no-cache add coreutils-od ;;
+            ghcr.io/void-linux/void-*) retry /usr/bin/xbps-install -Sy util-linux ;;
           esac
         env:
-          CONTAINER: ${{ matrix.container }}
-        if: matrix.container != ''
+          CONTAINER: ${{ matrix.container || matrix.os }}
+        if: matrix.container != '' || matrix.os == 'ubuntu-slim'
       - run: ./tools/ci/test.sh
         env:
-          CONTAINER: ${{ matrix.container }}
+          CONTAINER: ${{ matrix.container || matrix.os }}
       - run: ./tools/tidy.sh
         # tools/tidy.sh uses docker, but ubuntu-slim doesn't have docker by default.
         # macOS/Windows runners don't support nested virtualization https://github.com/orgs/community/discussions/25491

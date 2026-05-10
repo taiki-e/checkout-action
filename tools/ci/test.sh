@@ -6,13 +6,14 @@ trap -- 'printf >&2 "%s\n" "${0##*/}: trapped SIGINT"; exit 1' SIGINT
 
 set -x
 
+type -P bash >&2
 bash --version >&2
-sleep --version >&2
-grep --version >&2
-sed --version >&2 || true
-awk --version >&2 || true
+for cmd in git sleep awk sed grep; do
+  type -P "${cmd}" >&2
+  "${cmd}" --version >&2 || true
+done
 
-expected='^ *22$'
+expected='^ *23$'
 count=$(git ls-files | LC_ALL=C wc -l)
 # BSD wc's -l emits spaces before number.
 [[ "${count}" =~ ${expected} ]] || exit 1

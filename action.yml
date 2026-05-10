@@ -13,6 +13,7 @@ runs:
   using: composite
   steps:
     - run: |
+        # Checkout (non-Windows)
         bail() {
           printf '::error::checkout-action: %s\n' "$*"
           exit 1
@@ -20,16 +21,48 @@ runs:
         warn() {
           printf '::warning::checkout-action: %s\n' "$*"
         }
-        if command -v /bin/grep >/dev/null; then
-          grep=/bin/grep
-        elif command -v /usr/bin/grep >/dev/null; then
-          grep=/usr/bin/grep
-        else
-          grep=$(command -v grep)
-          if [ -n "${HAS_TOKEN}" ]; then
-            bail "grep is unavailable at standard location; found ${grep}"
+        # Use binaries available at standard location to prevent path interception.
+        # On macOS and known Linux distributions:
+        # - /usr/bin/env and /bin/sh are always available.
+        # On macOS and known non-NixOS Linux distributions:
+        # - /bin/bash is available by default or when bash is installed by system package manager.
+        # - Required or optionally used tools are available in any of /bin:/usr/bin:/sbin:/usr/sbin
+        #   by default or when installed by system package manager.
+        #   Note that sed/awk (both not currently used in this action) are not always available by default,
+        #   e.g.,:
+        #   - no sed: nixos/nix, photon:1.0
+        #   - no awk: opensuse/tumbleweed, nixos/nix, openmandriva/cooker, photon
+        # On NixOS:
+        # - bash and POSIX utilities are available at /run/current-system/sw/bin or /run/wrappers/bin.
+        #   On nixos/nix image (which has no /etc/NIXOS), they are available at /root/.nix-profile/bin.
+        # - git is usually available at ~/.nix-profile/bin when installed by system package manager.
+        # See "Compatibility" section in README.md for partial list of tested distributions.
+        # NB: Sync with resolve_path in src/*.sh and tools/ci/test-bash-func.sh.
+        # https://github.com/git/git/blob/v2.54.0/Makefile#L927-L935
+        resolve_path() {
+          for dir in /bin /usr/bin /sbin /usr/sbin; do
+            if [ -x "${dir}/$1" ]; then
+              printf '%s/%s\n' "${dir}" "$1"
+              return
+            fi
+          done
+          if [ -e /etc/NIXOS ] && [ -x /run/current-system/sw/bin/"$1" ]; then
+            printf '/run/current-system/sw/bin/%s\n' "$1"
+          elif [ -e /etc/NIXOS ] && [ -x /run/wrappers/bin/"$1" ]; then
+            printf '/run/wrappers/bin/%s\n' "$1"
+          elif [ -e /etc/nix ] && [ -x /root/.nix-profile/bin/"$1" ]; then
+            printf '/root/.nix-profile/bin/%s\n' "$1"
+          fi
+        }
+        grep=$(resolve_path grep)
+        if [ -z "${grep}" ]; then
+          grep=$(command -v grep 2>/dev/null || true)
+          if [ -z "${grep}" ]; then
+            bail "this action requires grep"
+          elif [ -n "${HAS_TOKEN}" ]; then
+            bail "grep is unavailable at standard location; found ${grep}; aborting due to security reasons because 'token' input option is set"
           else
-            warn "grep is unavailable at standard location; using ${grep}"
+            warn "grep is unavailable at standard location; using ${grep}, but this may be blocked for security reasons in the future"
           fi
         fi
         # If /bin/sh is dash, environment variable containing % is not imported, but is fine
@@ -37,80 +70,28 @@ runs:
         if /usr/bin/env | "${grep}" -Eq '^BASH_FUNC_'; then
           bail 'bash function injection via BASH_FUNC_ environment variable is not allowed for security reasons'
         fi
-        if ! command -v bash >/dev/null; then
-          if command -v /bin/sleep >/dev/null; then
-            sleep=/bin/sleep
-          elif command -v /usr/bin/sleep >/dev/null; then
-            sleep=/usr/bin/sleep
-          else
-            sleep=$(command -v sleep)
-            if [ -n "${HAS_TOKEN}" ]; then
-              bail "sleep is unavailable at standard location; found ${sleep}"
-            else
-              warn "sleep is unavailable at standard location; using ${sleep}"
-            fi
-          fi
-          retry() {
-            for i in 1 2 3 4 5 6 7 8 9 10; do
-              if "$@"; then
-                return 0
-              else
-                "${sleep}" "${i}"
-              fi
-            done
-            "$@"
-          }
-          if "${grep}" -Eq '^ID="?alpine"?$|^ID_LIKE=.*alpine' /etc/os-release; then
-            printf '::group::Install packages required for checkout-action (bash)\n'
-            # NB: sync with src/main.sh
-            if command -v /usr/bin/sudo >/dev/null; then
-              retry /usr/bin/sudo /sbin/apk --no-cache add bash
-            elif command -v /usr/bin/doas >/dev/null; then
-              retry /usr/bin/doas /sbin/apk --no-cache add bash
-            else
-              retry /sbin/apk --no-cache add bash
-            fi
-            printf '::endgroup::\n'
-          elif "${grep}" -Eq '^ID="?openwrt"?$|^ID_LIKE=.*openwrt' /etc/os-release; then
-            printf '::group::Install packages required for checkout-action (bash)\n'
-            # NB: sync with src/main.sh
-            # https://forum.openwrt.org/t/the-future-is-now-opkg-vs-apk/201164
-            if command -v /usr/bin/apk >/dev/null; then
-              if command -v /usr/bin/sudo >/dev/null; then
-                retry /usr/bin/sudo /usr/bin/apk --no-cache add bash
-              else
-                retry /usr/bin/apk --no-cache add bash
-              fi
-            else
-              if command -v /usr/bin/sudo >/dev/null; then
-                /usr/bin/sudo /bin/mkdir -p -- /var/lock
-                retry /usr/bin/sudo /bin/opkg update
-                retry /usr/bin/sudo /bin/opkg install bash
-              else
-                /bin/mkdir -p -- /var/lock
-                retry /bin/opkg update
-                retry /bin/opkg install bash
-              fi
-            fi
-            printf '::endgroup::\n'
-          else
-            bail 'this action requires bash'
+        # Install missing required tools from system package manager on Linux.
+        # See src/install-required-tools.sh for more.
+        if [ "${RUNNER_OS}" = 'Linux' ]; then
+          if ! command -v bash >/dev/null 2>&1 || ! command -v git >/dev/null 2>&1; then
+            /bin/sh "${GITHUB_ACTION_PATH:?}/src/install-required-tools.sh"
           fi
         fi
-        if command -v /bin/bash >/dev/null; then
-          /bin/bash --noprofile --norc "${GITHUB_ACTION_PATH:?}/src/main.sh"
-        else
-          bash=$(command -v bash)
-          if [ -n "${HAS_TOKEN}" ]; then
-            bail "bash is unavailable at standard location; found ${bash}"
+        bash=$(resolve_path bash)
+        if [ -z "${bash}" ]; then
+          bash=$(command -v bash 2>/dev/null || true)
+          if [ -z "${bash}" ]; then
+            bail "this action requires bash"
+          elif [ -n "${HAS_TOKEN}" ]; then
+            bail "bash is unavailable at standard location; found ${bash}; aborting due to security reasons because 'token' input option is set"
           else
-            warn "bash is unavailable at standard location; using ${bash}"
-            "${bash}" --noprofile --norc "${GITHUB_ACTION_PATH:?}/src/main.sh"
+            warn "bash is unavailable at standard location; using ${bash}, but this may be blocked for security reasons in the future"
           fi
         fi
+        "${bash}" --noprofile --norc "${GITHUB_ACTION_PATH:?}/src/main.sh"
       shell: /usr/bin/env -u ENV -u BASH_ENV -u CDPATH -u SHELLOPTS -u BASHOPTS /bin/sh -eu {0} # zizmor: ignore[misfeature] false positive
       env:
-        # NB: Sync with Windows case.
+        # NB: Sync with Windows step.
         INPUT_TOKEN: ${{ inputs.token }}
         # TODO: support in input options
         INPUT_REPOSITORY: ${{ github.repository }}
@@ -123,34 +104,45 @@ runs:
     # Use pwsh and retry on bash startup failure to work around windows-11-arm runner bug:
     # https://github.com/actions/partner-runner-images/issues/169
     - run: |
+        # Checkout (Windows)
         Set-StrictMode -Version Latest
         $remove_env = @('ENV','BASH_ENV','CDPATH','SHELLOPTS','BASHOPTS','BASH_FUNC_*')
         foreach ($name in $remove_env) {
           if (Test-Path "Env:$name") { Remove-Item "Env:\$name" }
         }
+        # Use binaries available at standard location to prevent path interception.
         $bash = (Get-Command bash).Path
         switch ($bash) {
           "C:\Program Files\Git\bin\bash.exe" {} # default
-          "C:\msys64\usr\bin\bash.exe" {} # msys64
-          "C:\tools\cygwin\bin\bash.exe" {} # cygwin
+          "C:\msys64\usr\bin\bash.exe" {} # MSYS2
+          "C:\tools\cygwin\bin\bash.exe" {} # Cygwin
           default {
-            if ("$env:HAS_TOKEN" -ne "") {
-              Write-Output "::error::checkout-action: bash is unavailable at standard location; found $bash"
+            if (Test-Path -LiteralPath "C:\Program Files\Git\bin\bash.exe") {
+              $bash = "C:\Program Files\Git\bin\bash.exe"
+            } elseif (Test-Path -LiteralPath "C:\msys64\usr\bin\bash.exe") {
+              $bash = "C:\msys64\usr\bin\bash.exe"
+            } elseif (Test-Path -LiteralPath "C:\tools\cygwin\bin\bash.exe") {
+              $bash = "C:\tools\cygwin\bin\bash.exe"
+            } elseif ("$bash" -eq "") {
+              Write-Output "::error::checkout-action: this action requires bash"
+              exit 1
+            } elseif ("$env:HAS_TOKEN" -ne "") {
+              Write-Output "::error::checkout-action: bash is unavailable at standard location; found $bash; aborting due to security reasons because 'token' input option is set"
               exit 1
             } else {
-              Write-Output "::warning::checkout-action: bash is unavailable at standard location; using $bash"
+              Write-Output "::warning::checkout-action: bash is unavailable at standard location; using $bash, but this may be blocked for security reasons in the future"
             }
           }
         }
         for ($i=1; $i -le 10; $i++) {
           $prev_err_action = $ErrorActionPreference
           $ErrorActionPreference = "Continue"
-          & bash --noprofile --norc "$env:GITHUB_ACTION_PATH\src\main.sh"
+          & "$bash" --noprofile --norc "$env:GITHUB_ACTION_PATH\src\main.sh"
           $code = $LASTEXITCODE
           $ErrorActionPreference = "$prev_err_action"
-          if (Test-Path "$env:USERPROFILE\.checkout-action-init") {
+          if (Test-Path -LiteralPath "$env:USERPROFILE\.checkout-action-init") {
             # If bash started successfully, src/main.sh creates init file.
-            Remove-Item "$env:USERPROFILE\.checkout-action-init" -Force
+            Remove-Item -LiteralPath "$env:USERPROFILE\.checkout-action-init" -Force
             exit $code
           }
           if ($i -lt 10) {
@@ -161,7 +153,7 @@ runs:
         exit 1
       shell: pwsh
       env:
-        # NB: Sync with non-Windows case.
+        # NB: Sync with non-Windows step.
         INPUT_TOKEN: ${{ inputs.token }}
         # TODO: support in input options
         INPUT_REPOSITORY: ${{ github.repository }}

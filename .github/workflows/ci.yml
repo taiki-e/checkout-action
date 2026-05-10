@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   tidy:
-    uses: taiki-e/github-actions/.github/workflows/tidy.yml@bb4b993445b42a3c480b92e7bc504c051c6d159b # main
+    uses: taiki-e/github-actions/.github/workflows/tidy.yml@931686d4e4cf88b13e790040727ccde2dba8ec62 # main
     permissions:
       security-events: write # for github/codeql-action/*
 
@@ -71,6 +71,8 @@ jobs:
           - container: debian:13-slim # glibc 2.41, git 2.47
           - container: debian:13-slim
             sudo: sudo
+          - container: debian:13-slim
+            sudo: doas
           - container: debian:12-slim # glibc 2.36, git 2.39
           - container: debian:11-slim # glibc 2.31, git 2.30, EoL
           - container: debian:10-slim # glibc 2.28, git 2.20, EoL, end of LTS
@@ -92,6 +94,8 @@ jobs:
           - container: ubuntu:26.04 # glibc 2.43, git 2.53
           - container: ubuntu:26.04
             sudo: sudo
+          - container: ubuntu:26.04
+            sudo: doas
           - container: ubuntu:24.04 # glibc 2.39, git 2.43
           - container: ubuntu:22.04 # glibc 2.35, git 2.34
           - container: ubuntu:20.04 # glibc 2.31, git 2.25, EoL
@@ -100,6 +104,17 @@ jobs:
           - container: ubuntu:14.04 # glibc 2.19, git 1.9, EoL, end of ESM
           # - container: ubuntu:12.04 # glibc 2.15, git 1.7, EoL, end of ESM, git too old
           # ubuntu:10.04 image uses legacy image format.
+          # https://hub.docker.com/r/devuan/devuan
+          - container: devuan/devuan:unstable
+          - container: devuan/devuan:testing
+          - container: devuan/devuan:excalibur # 6, debian 13
+          - container: devuan/devuan:daedalus # 5, debian 12
+          - container: devuan/devuan:chimaera # 4, debian 11
+          # - container: devuan/devuan:beowulf # 3, debian 10, EoL, apt-get fail
+          # - container: devuan/devuan:ascii # 2, debian 9, EoL, apt-get fail
+          # devuan/devuan:jessie (1) image is not available.
+          # https://hub.docker.com/r/kalilinux/kali-rolling
+          - container: kalilinux/kali-rolling:latest
           # --------------------------------------------------------------------
           # Fedora/RHEL-based
           # https://hub.docker.com/_/fedora
@@ -107,6 +122,8 @@ jobs:
           - container: fedora:44 # glibc 2.43, git 2.54
           - container: fedora:44
             sudo: sudo
+          - container: fedora:44
+            sudo: doas
           - container: fedora:43 # glibc 2.42, git 2.54
           - container: fedora:42 # glibc 2.41, git 2.54
           # Skip intermediate versions that have reached EoL by default.
@@ -138,6 +155,18 @@ jobs:
           - container: centos:6 # glibc 2.12, git 1.7, EoL
           # - container: centos:5 # glibc 2.5, git ?, EoL, "M2Crypto.SSL.SSLError: sslv3 alert handshake failure" error with yum
           # centos:4 image is not available
+          # https://hub.docker.com/r/redhat/ubi10
+          # https://hub.docker.com/r/redhat/ubi10-minimal
+          # https://hub.docker.com/r/redhat/ubi9
+          # https://hub.docker.com/r/redhat/ubi9-minimal
+          # https://hub.docker.com/r/redhat/ubi8
+          # https://hub.docker.com/r/redhat/ubi8-minimal
+          - container: redhat/ubi10:latest # glibc 2.39, git 2.47
+          - container: redhat/ubi10-minimal:latest # glibc 2.39, git 2.47
+          - container: redhat/ubi9:latest # glibc 2.34, git 2.47
+          - container: redhat/ubi9-minimal:latest # glibc 2.34, git 2.47
+          - container: redhat/ubi8:latest # glibc 2.28, git 2.43
+          - container: redhat/ubi8-minimal:latest # glibc 2.28, git 2.43
           # https://hub.docker.com/_/almalinux
           - container: almalinux:10 # glibc 2.39, git 2.47
           - container: almalinux:10-minimal # glibc 2.39, git 2.47
@@ -145,6 +174,66 @@ jobs:
           - container: almalinux:9-minimal # glibc 2.34, git 2.47
           - container: almalinux:8 # glibc 2.28, git 2.43
           - container: almalinux:8-minimal # glibc 2.28, git 2.43
+          # https://hub.docker.com/r/rockylinux/rockylinux
+          - container: rockylinux/rockylinux:10 # glibc 2.39, git 2.47
+          - container: rockylinux/rockylinux:10-minimal # glibc 2.39, git 2.47
+          - container: rockylinux/rockylinux:9 # glibc 2.34, git 2.47
+          - container: rockylinux/rockylinux:9-minimal # glibc 2.34, git 2.47
+          - container: rockylinux/rockylinux:8 # glibc 2.28, git 2.43
+          - container: rockylinux/rockylinux:8-minimal # glibc 2.28, git 2.43
+          # https://hub.docker.com/_/amazonlinux
+          - container: amazonlinux:2023 # glibc
+          - container: amazonlinux:2 # glibc
+          - container: amazonlinux:1 # glibc
+          # https://hub.docker.com/_/oraclelinux
+          - container: oraclelinux:10 # glibc 2.39, git 2.47
+          - container: oraclelinux:10-slim # glibc 2.39, git 2.47
+          - container: oraclelinux:9 # glibc 2.34, git 2.47
+          - container: oraclelinux:9-slim # glibc 2.34, git 2.47
+          - container: oraclelinux:8 # glibc 2.28, git 2.43
+          - container: oraclelinux:8-slim # glibc 2.28, git 2.43
+          - container: oraclelinux:7 # glibc 2.17, git 1.8
+          - container: oraclelinux:7-slim # glibc 2.17, git 1.8
+          # https://hub.docker.com/_/mageia
+          # - container: mageia:cauldron # glibc, dnf fail
+          - container: mageia:9 # glibc
+          # Skip intermediate versions that have reached EoL by default.
+          # - container: mageia:8 # glibc, EoL
+          # - container: mageia:7 # glibc, EoL
+          - container: mageia:6 # glibc, EoL
+          # - container: mageia:5.1 # glibc 2.20, bash 4.3, no yum
+          # - container: mageia:5 # glibc 2.20, bash 4.3, no yum
+          # mageia:4 image uses legacy image format.
+          # https://hub.docker.com/r/openmandriva/cooker
+          # https://hub.docker.com/r/openmandriva/minimal
+          - container: openmandriva/cooker:latest # glibc
+          - container: openmandriva/minimal:rock # glibc
+          - container: openmandriva/minimal:rolling # glibc
+          # https://hub.docker.com/_/alt
+          - container: alt:sisyphus # glibc
+          - container: alt:p11 # glibc
+          - container: alt:p10 # glibc
+          - container: alt:p9 # glibc
+          - container: alt:p8 # glibc
+          # alt:p7 image is not available
+          # https://hub.docker.com/_/photon
+          - container: photon:5.0 # glibc
+          - container: photon:4.0 # glibc
+          # Skip intermediate versions that have reached EoL by default.
+          # - container: photon:3.0 # glibc, EoL
+          # - container: photon:2.0 # glibc, EoL
+          - container: photon:1.0 # glibc, EoL
+          # https://hub.docker.com/r/windriver/wrdistro23
+          # https://hub.docker.com/r/windriver/wrlx-image
+          - container: windriver/wrdistro23:full # glibc, coreutils
+          # - container: windriver/wrdistro23:minimal # glibc, busybox, no /etc/os-release
+          - container: windriver/wrlx-image:lts22-full # glibc, coreutils
+          - container: windriver/wrlx-image:lts22-minimal # glibc, busybox
+          - container: windriver/wrlx-image:lts21-full # glibc, coreutils
+          - container: windriver/wrlx-image:lts21-minimal # glibc, busybox
+          # - container: windriver/wrlx-image:lts19 # glibc ?, busybox 1.31, no yum
+          # https://hub.docker.com/r/openeuler/openeuler
+          - container: openeuler/openeuler:latest # glibc
           # --------------------------------------------------------------------
           # SUSE-based
           # https://hub.docker.com/r/opensuse/tumbleweed
@@ -209,10 +298,31 @@ jobs:
           # - container: openwrt/rootfs:x86-64-19.07.10 # musl ?, git ?, opkg, EoL
           - container: openwrt/rootfs:x86-64-18.06.9 # musl ?, git ?, opkg, EoL
           # openwrt/rootfs:x86-64-17.01.* image is not available
+          # https://hub.docker.com/r/chainguard/wolfi-base
+          - container: chainguard/wolfi-base:latest
           # --------------------------------------------------------------------
-          # Others
+          # Arch-based
           # https://hub.docker.com/_/archlinux
           - container: archlinux:latest # glibc
+          # https://hub.docker.com/r/artixlinux/artixlinux
+          - container: artixlinux/artixlinux:latest # glibc
+          # https://hub.docker.com/r/cachyos/cachyos
+          - container: cachyos/cachyos:latest # glibc
+          # https://hub.docker.com/r/manjarolinux/base
+          - container: manjarolinux/base:latest # glibc
+          # --------------------------------------------------------------------
+          # Others
+          # https://hub.docker.com/r/gentoo/stage3
+          - container: gentoo/stage3:hardened # glibc
+          - container: gentoo/stage3:musl-hardened # musl
+          # https://github.com/void-linux/void-containers
+          - container: ghcr.io/void-linux/void-glibc:latest # glibc
+          - container: ghcr.io/void-linux/void-musl:latest # musl
+          # https://github.com/Vanilla-OS/pico-image
+          - container: ghcr.io/vanilla-os/pico:dev
+          - container: ghcr.io/vanilla-os/pico:main
+          # https://hub.docker.com/r/nixos/nix
+          - container: nixos/nix:latest
     runs-on: ${{ matrix.os || 'ubuntu-24.04' }}
     container: ${{ matrix.container }}
     timeout-minutes: 30
@@ -239,8 +349,7 @@ jobs:
       - name: Install requirements (old Debian)
         run: |
           # In Debian, the old repositories is removed from the main mirrors some time after end of LTS.
-          # shellcheck source=/dev/null
-          codename=$(. /etc/os-release; printf '%s\n' "${VERSION_CODENAME}")
+          codename=$(grep -E '^VERSION_CODENAME=' /etc/os-release | cut -d= -f2)
           sed -i /etc/apt/sources.list -e 's/deb.debian.org/archive.debian.org/g' \
             -e 's|security.debian.org|archive.debian.org/|g' \
             -e "/${codename}-updates/d"
@@ -320,10 +429,12 @@ jobs:
           }
           # https://repology.org/project/opendoas/versions
           case "${CONTAINER}" in
+            debian* | ubuntu*) retry /usr/bin/apt-get -o Acquire::Retries=10 -qq update && /usr/bin/apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends opendoas ;;
+            fedora*) retry /usr/bin/dnf install -y opendoas ;;
             alpine*) retry /sbin/apk --no-cache add doas ;;
             *) exit 1 ;;
           esac
-          printf 'permit nopass :wheel\n' >>/etc/doas.conf
+          printf 'permit nopass :%s\n' "${USER:-root}" >>/etc/doas.conf
         shell: sh -eux {0}
         env:
           CONTAINER: ${{ matrix.container }}

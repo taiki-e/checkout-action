@@ -68,16 +68,16 @@ The `@v<major>` tags are updated with each release. If you want to enhance workf
 
 ## Compatibility
 
-This action has been tested for GitHub-hosted runners (Ubuntu, macOS, Windows) and containers (Ubuntu, Debian, Fedora, CentOS, Alma, openSUSE, Arch, Alpine, OpenWrt).
+This action has been [tested](https://github.com/taiki-e/checkout-action/blob/HEAD/.github/workflows/ci.yml) for GitHub-hosted runners (Ubuntu, macOS, Windows) and containers (Debian, Ubuntu, Devuan, Kali, Fedora, CentOS, UBI, Alma, Rocky, Amazon, Oracle, Mageia, OpenMandriva, ALT, Photon, Wind River, openEuler, openSUSE, Alpine, OpenWrt, Wolfi, Arch, Artix, CachyOS, Manjaro, Gentoo, Void, Vanilla, Nix).
 
-On Linux, if any required tools are missing, this action will attempt to install them from distro's package manager, so no pre-setup is usually required (except for CentOS or Debian 10 (or older) or very old distro described below, which was already EoL and needs to use vault/archive repos -- see "Install requirements" in [our CI config](https://github.com/taiki-e/checkout-action/blob/HEAD/.github/workflows/ci.yml) for example of setup).
+On Linux, if any required tools are missing, this action will [attempt to install them from system package manager](https://github.com/taiki-e/checkout-action/blob/HEAD/src/install-required-tools.sh), so no pre-setup is usually required (except for CentOS or Debian 10 (or older) or very old distro described below, which was already EoL and needs to use vault/archive repos -- see "Install requirements" in [our CI config](https://github.com/taiki-e/checkout-action/blob/HEAD/.github/workflows/ci.yml) for example of setup).
 
 On other platforms, at least the following tools are required:
 
 - bash 3.2+
 - git 1.8+ (when using `token` input option, it is recommended using git 2.0+ for security reasons)
 
-Known environments affected by the above version requirements are CentOS 6 (EoL on 2020-11) and Ubuntu 12.04 (EoL on 2017-04) using git 1.7 (see "Install requirements" in [our CI config](https://github.com/taiki-e/checkout-action/blob/HEAD/.github/workflows/ci.yml) for example of workaround).
+Known environments affected by the above version requirements are CentOS 6 (EoL on 2020-11), Ubuntu 12.04 (EoL on 2017-04), and Debian 7 (EoL on 2016-04), using git 1.7 (see "Install requirements (CentOS)" in [our CI config](https://github.com/taiki-e/checkout-action/blob/HEAD/.github/workflows/ci.yml) for example of workaround on CentOS 6).
 
 Note that what this action installs for its setup (such as above tools) is considered an implementation detail if they are installed by this action's side, and there is no guarantee that they will be available in subsequent steps, because this action is not an action for installing those tools.
 

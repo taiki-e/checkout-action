@@ -171,6 +171,36 @@ wd="${PWD}"
 # (or environments that were previously compromised and only incompletely repaired) they can lead to
 # arbitrary code execution.
 common_args=(-c core.hooksPath=/dev/null -c core.fsmonitor=false)
+# hooksPath=/dev/null doesn't disable config-based hooks added in Git 2.54:
+# https://github.blog/open-source/git/highlights-from-git-2-54/#h-config-based-hooks
+# So, disable them individually. This is not resistant to TOCTOU attacks, but AFAIK,
+# Git 2.54 unfortunately does not provide an appropriate mechanism to prevent them.
+hooks=(
+  # List from https://git-scm.com/docs/githooks
+  # (Last checked: 2.54.0. am, receive-pack, send-email, fsmonitor, and p4 related hooks omitted.)
+  # pre-commit # commit
+  # pre-merge-commit # merge
+  # prepare-commit-msg # commit
+  # commit-msg # commit/merge
+  # post-commit # commit
+  # pre-rebase # rebase
+  post-checkout # checkout/switch
+  # post-merge # pull
+  # pre-push # push
+  reference-transaction # any ref update
+  # pre-auto-gc # gc
+  # post-rewrite # commit/rebase
+  post-index-change # any index update
+)
+for hook in "${hooks[@]}"; do
+  # git hook list fails on old version or on no hook available.
+  names=$("${git}" "${common_args[@]}" hook list "${hook}" 2>/dev/null || :)
+  if [[ -n "${names}" ]]; then
+    while IFS= read -r name; do
+      common_args+=(-c "hook.${name}.enabled=false")
+    done <<<"${names}"
+  fi
+done
 
 git_version=$("${git}" "${common_args[@]}" version)
 git_version="${git_version#git version }"

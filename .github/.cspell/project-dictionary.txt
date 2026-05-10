@@ -43,6 +43,7 @@ sles
 sslv
 systeminfo
 tdnf
+TOCTOU
 USERPROFILE
 webrsync
 windriver

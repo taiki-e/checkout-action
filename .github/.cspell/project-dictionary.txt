@@ -4,6 +4,7 @@ amazonlinux
 archlinux
 artix
 artixlinux
+ASKPASS
 AWKLIBPATH
 AWKPATH
 Cachy

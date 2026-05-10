@@ -201,9 +201,11 @@ g "${git}" remote add origin "${repository_url}"
 
 g "${git}" config --local gc.auto 0
 
+# Disable askPass to prevent arbitrary code execution if authentication fails.
 # Enforce sslVerify to ensure security of https.
-unset GIT_SSL_NO_VERIFY
+unset GIT_ASKPASS GIT_SSL_NO_VERIFY
 fetch_args=(
+  -c core.askPass=/dev/null
   -c "http.${repository_url}.sslVerify=true"
   -c "https.${repository_url}.sslVerify=true"
 )

@@ -375,21 +375,21 @@ if [[ -n "${HAS_TOKEN}" ]]; then
     "${git}" config --local credential.helper ''
     first_credential_helper=()
   fi
+  # https://git-scm.com/docs/gitcredentials#_custom_helpers
   # shellcheck disable=SC2016
   INPUT_PROTOCOL="${protocol}" \
     INPUT_HOSTNAME="${hostname}" \
     INPUT_TOKEN="${token}" \
     retry "${git}" \
     ${first_credential_helper[@]+"${first_credential_helper[@]}"} \
-    -c 'credential.helper=!f() {
+    -c credential."${repository_url}".helper='!f() {
 protocol=""
 host=""
-while IFS= read -r line; do
+while IFS= read -r line || [ -n "${line}" ]; do
   case "${line}" in
     protocol=*) protocol="${line#protocol=}" ;;
     host=*) host="${line#host=}" ;;
   esac
-  [ -n "${line}" ] || break
 done
 if [ "${protocol}" = "${INPUT_PROTOCOL}" ] && [ "${host}" = "${INPUT_HOSTNAME}" ]; then
   printf "protocol=%s\nhost=%s\nusername=x-access-token\npassword=%s\n" "${INPUT_PROTOCOL}" "${INPUT_HOSTNAME}" "${INPUT_TOKEN}"

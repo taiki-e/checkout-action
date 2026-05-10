@@ -167,16 +167,18 @@ esac
 
 wd="${PWD}"
 
-g "${git}" version
 git_version=$("${git}" version)
+git_version="${git_version#git version }"
+printf 'git version: %s\n' "${git_version}"
+printf 'bash version: %s\n' "${BASH_VERSION:-}"
 # --local and --no-recurse-submodules require git 1.8.
-if [[ "${git_version}" == 'git version 1.'* ]] && [[ "${git_version}" != 'git version 1.8.'* ]] && [[ "${git_version}" != 'git version 1.9.'* ]]; then
+if [[ "${git_version}" == '1.'* ]] && [[ "${git_version}" != '1.8.'* ]] && [[ "${git_version}" != '1.9.'* ]]; then
   warn "this action requires git 1.8+"
 fi
 if [[ -n "${HAS_TOKEN}" ]]; then
   # Setting empty value via -c requires git 2.0.
   # We use local config to mitigate the impact of their absence, but using git 2.0+ is best.
-  if [[ "${git_version}" == 'git version 1.'* ]]; then
+  if [[ "${git_version}" == '1.'* ]]; then
     warn "when using 'token' input option, it is recommended using git 2.0+ for security reasons"
     has_c_flag_with_empty_val=''
   else

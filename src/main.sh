@@ -1,11 +1,12 @@
-#!/usr/bin/env bash
+#!/bin/false
 # SPDX-License-Identifier: Apache-2.0 OR MIT
+# shellcheck shell=bash # not executable, must be called with `--noprofile --norc --posix`
 set -CeEuo pipefail
 IFS=$'\n\t'
 
 g() {
   IFS=' '
-  local cmd="$*"
+  builtin local cmd="$*"
   IFS=$'\n\t'
   printf '::group::%s\n' "${cmd#retry }"
   "$@" 2>&1
@@ -13,10 +14,10 @@ g() {
 }
 g_for_hw_info() {
   IFS=' '
-  local cmd="$*"
+  builtin local cmd="$*"
   IFS=$'\n\t'
   printf '::group::Show hardware information (%s)\n' "${cmd#retry }"
-  "$@" 2>&1 || true
+  "$@" 2>&1 || :
   printf '::endgroup::\n'
 }
 retry() {
@@ -100,7 +101,7 @@ case "${RUNNER_OS}" in
       g_for_hw_info "${lscpu}"
     fi
     if [[ -z "${git}" ]]; then
-      git=$(type -P git || true)
+      git=$(builtin type -P git || :)
       if [[ -z "${git}" ]]; then
         bail "this action requires git"
       elif [[ -n "${HAS_TOKEN}" ]]; then
@@ -114,7 +115,7 @@ case "${RUNNER_OS}" in
     # Output CPU information to make it easier to debug the runner issues.
     g_for_hw_info /usr/sbin/sysctl hw.optional machdep.cpu
     if [[ -z "${git}" ]]; then
-      git=$(type -P git || true)
+      git=$(builtin type -P git || :)
       if [[ -z "${git}" ]]; then
         bail "this action requires git"
       elif [[ -n "${HAS_TOKEN}" ]]; then
@@ -133,7 +134,7 @@ case "${RUNNER_OS}" in
     # Output CPU information to make it easier to debug the runner issues.
     g_for_hw_info 'C:\Windows\system32\systeminfo.exe'
     if [[ -z "${git}" ]]; then
-      git=$(type -P git || true)
+      git=$(builtin type -P git || :)
       case "${git}" in
         /mingw64/bin/git) ;;                        # x86_64 runner default
         /clangarm64/bin/git) ;;                     # aarch64 runner default
@@ -164,7 +165,7 @@ case "${RUNNER_OS}" in
   *) bail "unrecognized OS '${RUNNER_OS}'" ;;
 esac
 
-wd=$(pwd)
+wd="${PWD}"
 
 g "${git}" version
 git_version=$("${git}" version)
@@ -191,7 +192,7 @@ g "${git}" -c advice.defaultBranchName=false init --template=''
 # error: could not lock config file C:/tools/cygwin/home/runneradmin/.gitconfig: No such file or directory
 # error: could not lock config file C:/msys64/home/runneradmin/.gitconfig: No such file or directory
 if [[ -n "${is_fake_home}" ]]; then
-  g "${git}" config --global --add safe.directory "${wd}" || true
+  g "${git}" config --global --add safe.directory "${wd}" || :
 else
   g "${git}" config --global --add safe.directory "${wd}"
 fi
@@ -232,6 +233,7 @@ if [[ -n "${HAS_TOKEN}" ]]; then
     first_credential_helper=()
   fi
   # https://git-scm.com/docs/gitcredentials#_custom_helpers
+  # NB: Sync credential helper function with tools/ci/test-bash-func.sh.
   # shellcheck disable=SC2016
   INPUT_PROTOCOL="${protocol}" \
     INPUT_HOSTNAME="${hostname}" \

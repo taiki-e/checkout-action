@@ -4,6 +4,8 @@ amazonlinux
 archlinux
 artix
 artixlinux
+AWKLIBPATH
+AWKPATH
 Cachy
 cachyos
 CDPATH
@@ -13,7 +15,11 @@ coreutils
 cygdrive
 devuan
 doas
+DYLD
 fastestmirror
+FPATH
+gnused
+HWCAP
 kalilinux
 LASTEXITCODE
 mageia

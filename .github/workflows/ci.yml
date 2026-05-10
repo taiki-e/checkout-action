@@ -441,7 +441,31 @@ jobs:
         if: matrix.sudo == 'doas'
       # TODO: use the current branch instead of @main
       - uses: taiki-e/checkout-action@main # zizmor: ignore[unpinned-uses] # For test.
+      - name: Install sed/awk for test
+        run: |
+          retry() {
+            for i in 1 2 3 4 5 6 7 8 9 10; do
+              if "$@"; then
+                return 0
+              else
+                sleep "${i}"
+              fi
+            done
+            "$@"
+          }
+          case "${CONTAINER}" in
+            opensuse/tumbleweed:*) retry /usr/bin/zypper install -y awk ;;
+            nixos/nix:*) retry /root/.nix-profile/bin/nix-env -i gawk gnused ;;
+            openmandriva/cooker:*) retry /usr/bin/dnf install -y awk ;;
+            photon:1.0) retry /usr/bin/tdnf install -y gawk sed ;;
+            photon:*) retry /usr/bin/tdnf install -y gawk ;;
+          esac
+        env:
+          CONTAINER: ${{ matrix.container }}
+        if: matrix.container != ''
       - run: ./tools/ci/test.sh
+        env:
+          CONTAINER: ${{ matrix.container }}
       - run: ./tools/tidy.sh
         # tools/tidy.sh uses docker, but ubuntu-slim doesn't have docker by default.
         # macOS/Windows runners don't support nested virtualization https://github.com/orgs/community/discussions/25491

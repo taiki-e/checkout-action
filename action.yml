@@ -54,22 +54,6 @@ runs:
             printf '/root/.nix-profile/bin/%s\n' "$1"
           fi
         }
-        grep=$(resolve_path grep)
-        if [ -z "${grep}" ]; then
-          grep=$(command -v grep 2>/dev/null || true)
-          if [ -z "${grep}" ]; then
-            bail "this action requires grep"
-          elif [ -n "${HAS_TOKEN}" ]; then
-            bail "grep is unavailable at standard location; found ${grep}; aborting due to security reasons because 'token' input option is set"
-          else
-            warn "grep is unavailable at standard location; using ${grep}, but this may be blocked for security reasons in the future"
-          fi
-        fi
-        # If /bin/sh is dash, environment variable containing % is not imported, but is fine
-        # because it also means that it will not be exposed to subprocess.
-        if /usr/bin/env | "${grep}" -Eq '^BASH_FUNC_'; then
-          bail 'bash function injection via BASH_FUNC_ environment variable is not allowed for security reasons'
-        fi
         # Install missing required tools from system package manager on Linux.
         # See src/install-required-tools.sh for more.
         if [ "${RUNNER_OS}" = 'Linux' ]; then
@@ -79,7 +63,7 @@ runs:
         fi
         bash=$(resolve_path bash)
         if [ -z "${bash}" ]; then
-          bash=$(command -v bash 2>/dev/null || true)
+          bash=$(command -v bash 2>/dev/null || :)
           if [ -z "${bash}" ]; then
             bail "this action requires bash"
           elif [ -n "${HAS_TOKEN}" ]; then
@@ -88,8 +72,41 @@ runs:
             warn "bash is unavailable at standard location; using ${bash}, but this may be blocked for security reasons in the future"
           fi
         fi
-        "${bash}" --noprofile --norc "${GITHUB_ACTION_PATH:?}/src/main.sh"
-      shell: /usr/bin/env -u ENV -u BASH_ENV -u CDPATH -u SHELLOPTS -u BASHOPTS /bin/sh -eu {0} # zizmor: ignore[misfeature] false positive
+        "${bash}" --noprofile --norc --posix "${GITHUB_ACTION_PATH:?}/src/main.sh"
+      # Unset environment variables that may unexpectedly affect sh/bash behavior.
+      # - Environment variables that may unexpectedly affect sh/bash behavior
+      #   must be unset here.
+      # - Environment variables that also affect env command behavior must be
+      #   replaced with harmless values in env field. e.g., LD_*, DYLD_*
+      # - For such environment variables for other commands, unset them in
+      #   script as needed.
+      # We unset the followings here:
+      # - IFS, CDPATH, ENV, BASH_ENV, PS4, GLOBIGNORE, BASHOPTS, SHELLOPTS, FPATH:
+      #    See:
+      #     - https://github.com/sudo-project/sudo/blob/a40200a08a52515db4bc259c0153e7cd92f309ad/plugins/sudoers/env.c#L133
+      #     - https://www.gnu.org/software/bash/manual/html_node/Bash-Startup-Files.html#Invoked-with-unequal-effective-and-real-uid_002fgids
+      # - *builtin*, *[*, *printf*, *command*, *read*:
+      #     Bash supports injecting function via environment variable:
+      #     - Since CVE-2014-6271 fix: BASH_FUNC_func%%='() { ..; }'
+      #       - Red Hat uses the different style in old versions (RHEL 5-7): BASH_FUNC_func()='() { ..; }'
+      #       - Apple also uses the different style in old versions: __BASH_FUNC<func>()='() { ..; }'
+      #     - Until CVE-2014-6271 fix: func='() { ..; }'
+      #     This affects even when bash launched as /bin/sh (i.e., in POSIX mode).
+      #     See tools/ci/test-bash-func.sh for known affected/unaffected builtins.
+      #     We do the following to address this issue:
+      #     - Unset all style of environment variables that may inject bash function
+      #       for these builtins.
+      #       The latter four are needed because builtin command may not be available
+      #       in POSIX sh (i.e., scripts in action.yml and src/src/install-required-tools.sh,
+      #       and credential helper in main.sh).
+      #       Windows step removes all environment variables with value staring with '() {',
+      #       and sudo does similar, but it is difficult to do the same thing correctly in
+      #       a portable way. See tools/ci/test-list-bash-func-*.sh for details.
+      #     - Use POSIX mode in bash scripts to reduce the number of affected builtins,
+      #       and call affected builtins via "builtin" command.
+      #       The uses of affected builtins are detected by tools/ci/test-bash-func.sh.
+      # NB: Sync with Windows step.
+      shell: '/usr/bin/env -u IFS -u CDPATH -u ENV -u BASH_ENV -u PS4 -u GLOBIGNORE -u BASHOPTS -u SHELLOPTS -u FPATH -u builtin -u BASH_FUNC_builtin%% -u BASH_FUNC_builtin() -u __BASH_FUNC<builtin>() -u [ -u BASH_FUNC_[%% -u BASH_FUNC_[() -u __BASH_FUNC<[>() -u printf -u BASH_FUNC_printf%% -u BASH_FUNC_printf() -u __BASH_FUNC<printf>() -u command -u BASH_FUNC_command%% -u BASH_FUNC_command() -u __BASH_FUNC<command>() -u read -u BASH_FUNC_read%% -u BASH_FUNC_read() -u __BASH_FUNC<read>() /bin/sh -eu {0}' # zizmor: ignore[misfeature] false positive
       env:
         # NB: Sync with Windows step.
         INPUT_TOKEN: ${{ inputs.token }}
@@ -100,15 +117,46 @@ runs:
         INPUT_REF: ${{ github.ref }}
         HAS_TOKEN: ${{ inputs.token && '1' || '' }}
         RUNNER_OS: ${{ runner.os }}
+        # Unset environment variables that may unexpectedly affect env/sh/bash/etc. behavior.
+        # Since these may also affect env command, they must be replaced with harmless values before it is called.
+        # for Linux
+        # Refs:
+        # - "Secure-execution mode" in https://man7.org/linux/man-pages/man8/ld.so.8.html
+        # - https://musl.libc.org/manual.html
+        LD_AUDIT: ''
+        LD_DEBUG: ''
+        LD_DEBUG_OUTPUT: ''
+        LD_DYNAMIC_WEAK: ''
+        LD_HWCAP_MASK: ''
+        LD_LIBRARY_PATH: ''
+        LD_ORIGIN_PATH: ''
+        LD_PRELOAD: ''
+        LD_PROFILE: ''
+        # for macOS
+        DYLD_INSERT_LIBRARIES: ''
+        DYLD_FRAMEWORK_PATH: ''
+        DYLD_LIBRARY_PATH: ''
+        DYLD_FALLBACK_FRAMEWORK_PATH: ''
+        DYLD_FALLBACK_LIBRARY_PATH: ''
+        DYLD_VERSIONED_FRAMEWORK_PATH: ''
+        DYLD_VERSIONED_LIBRARY_PATH: ''
       if: runner.os != 'Windows'
     # Use pwsh and retry on bash startup failure to work around windows-11-arm runner bug:
     # https://github.com/actions/partner-runner-images/issues/169
     - run: |
         # Checkout (Windows)
         Set-StrictMode -Version Latest
-        $remove_env = @('ENV','BASH_ENV','CDPATH','SHELLOPTS','BASHOPTS','BASH_FUNC_*')
+        # Unset environment variables that may unexpectedly affect sh/bash behavior.
+        # See comment on shell field in action.yml for more.
+        # NB: Sync with it.
+        $remove_env = @('IFS','CDPATH','ENV','BASH_ENV','PS4','GLOBIGNORE','BASHOPTS','SHELLOPTS','FPATH')
         foreach ($name in $remove_env) {
-          if (Test-Path "Env:$name") { Remove-Item "Env:\$name" }
+          if (Test-Path -LiteralPath "Env:$name") { Remove-Item -LiteralPath "Env:\$name" }
+        }
+        # NB: Sync with tools/ci/test-bash-func-pwsh.ps1.
+        (Get-ChildItem Env:*) | ForEach-Object {
+          # -LiteralPath is important since BASH_FUNC_[%% is valid environment variable to override [.
+          if ($_.Value.StartsWith("() {")) { Remove-Item -LiteralPath "Env:\$($_.Key)" }
         }
         # Use binaries available at standard location to prevent path interception.
         $bash = (Get-Command bash).Path
@@ -137,7 +185,7 @@ runs:
         for ($i=1; $i -le 10; $i++) {
           $prev_err_action = $ErrorActionPreference
           $ErrorActionPreference = "Continue"
-          & "$bash" --noprofile --norc "$env:GITHUB_ACTION_PATH\src\main.sh"
+          & "$bash" --noprofile --norc --posix "$env:GITHUB_ACTION_PATH\src\main.sh"
           $code = $LASTEXITCODE
           $ErrorActionPreference = "$prev_err_action"
           if (Test-Path -LiteralPath "$env:USERPROFILE\.checkout-action-init") {

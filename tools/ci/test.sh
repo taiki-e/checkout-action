@@ -13,7 +13,7 @@ for cmd in git sleep awk sed grep; do
   "${cmd}" --version >&2 || true
 done
 
-expected='^ *23$'
+expected='^ *28$'
 count=$(git ls-files | LC_ALL=C wc -l)
 # BSD wc's -l emits spaces before number.
 [[ "${count}" =~ ${expected} ]] || exit 1
@@ -25,3 +25,5 @@ grep -Eq '\* [0-9a-f]+ \(grafted, (HEAD -> [0-9A-Za-z_./-]+, origin/[0-9A-Za-z_.
 git rev-parse HEAD
 
 git branch -a
+
+./tools/ci/test-bash-func.sh

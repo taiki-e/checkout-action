@@ -23,8 +23,8 @@ warn() {
 if [ "${RUNNER_OS}" != 'Linux' ]; then
   bail 'internal error: unreachable'
 fi
-bash=$(command -v bash 2>/dev/null || true)
-git=$(command -v git 2>/dev/null || true)
+bash=$(command -v bash 2>/dev/null || :)
+git=$(command -v git 2>/dev/null || :)
 if [ -n "${bash}" ] && [ -n "${git}" ]; then
   bail 'internal error: unreachable'
 fi

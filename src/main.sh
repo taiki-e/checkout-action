@@ -167,7 +167,12 @@ esac
 
 wd="${PWD}"
 
-git_version=$("${git}" version)
+# Since we disable template at git init, they normally do nothing, and in compromised environments
+# (or environments that were previously compromised and only incompletely repaired) they can lead to
+# arbitrary code execution.
+common_args=(-c core.hooksPath=/dev/null -c core.fsmonitor=false)
+
+git_version=$("${git}" "${common_args[@]}" version)
 git_version="${git_version#git version }"
 printf 'git version: %s\n' "${git_version}"
 printf 'bash version: %s\n' "${BASH_VERSION:-}"
@@ -189,19 +194,19 @@ fi
 # Disable template to avoid needless copy of sample hooks and reduce risk of hook injections in
 # compromised environments. This option takes precedence, so there is no need to modify environment
 # variables or configs: https://git-scm.com/docs/git-init#_template_directory
-g "${git}" -c advice.defaultBranchName=false init --template=''
+g "${git}" "${common_args[@]}" -c advice.defaultBranchName=false init --template=''
 
 # error: could not lock config file C:/tools/cygwin/home/runneradmin/.gitconfig: No such file or directory
 # error: could not lock config file C:/msys64/home/runneradmin/.gitconfig: No such file or directory
 if [[ -n "${is_fake_home}" ]]; then
-  g "${git}" config --global --add safe.directory "${wd}" || :
+  g "${git}" "${common_args[@]}" config --global --add safe.directory "${wd}" || :
 else
-  g "${git}" config --global --add safe.directory "${wd}"
+  g "${git}" "${common_args[@]}" config --global --add safe.directory "${wd}"
 fi
 
-g "${git}" remote add origin "${repository_url}"
+g "${git}" "${common_args[@]}" remote add origin "${repository_url}"
 
-g "${git}" config --local gc.auto 0
+g "${git}" "${common_args[@]}" config --local gc.auto 0
 
 # Disable askPass to prevent arbitrary code execution if authentication fails.
 # Enforce sslVerify to ensure security of https.
@@ -225,7 +230,7 @@ else
 fi
 
 IFS=' '
-cmd="${git} ${fetch_args[*]}"
+cmd="${git} ${common_args[*]} ${fetch_args[*]}"
 IFS=$'\n\t'
 printf '::group::%s\n' "${cmd}"
 if [[ -n "${HAS_TOKEN}" ]]; then
@@ -233,7 +238,7 @@ if [[ -n "${HAS_TOKEN}" ]]; then
   if [[ -n "${has_c_flag_with_empty_val}" ]]; then
     first_credential_helper=(-c credential.helper=)
   else
-    "${git}" config --local credential.helper ''
+    "${git}" "${common_args[@]}" config --local credential.helper ''
     first_credential_helper=()
   fi
   # https://git-scm.com/docs/gitcredentials#_custom_helpers
@@ -242,7 +247,7 @@ if [[ -n "${HAS_TOKEN}" ]]; then
   INPUT_PROTOCOL="${protocol}" \
     INPUT_HOSTNAME="${hostname}" \
     INPUT_TOKEN="${token}" \
-    retry "${git}" \
+    retry "${git}" "${common_args[@]}" \
     ${first_credential_helper[@]+"${first_credential_helper[@]}"} \
     -c credential."${repository_url}".helper='!f() {
 protocol=""
@@ -259,14 +264,14 @@ fi
 }; f' \
     "${fetch_args[@]}" 2>&1
 else
-  retry "${git}" "${fetch_args[@]}" 2>&1
+  retry "${git}" "${common_args[@]}" "${fetch_args[@]}" 2>&1
 fi
 printf '::endgroup::\n'
 
 if [[ -n "${HAS_TOKEN}" ]]; then
   if [[ -z "${has_c_flag_with_empty_val}" ]]; then
-    "${git}" config --unset --local credential.helper
+    "${git}" "${common_args[@]}" config --unset --local credential.helper
   fi
 fi
 
-g retry "${git}" "${checkout_args[@]}"
+g retry "${git}" "${common_args[@]}" "${checkout_args[@]}"

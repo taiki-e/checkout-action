@@ -20,16 +20,6 @@ g_for_hw_info() {
   "$@" 2>&1 || :
   printf '::endgroup::\n'
 }
-retry() {
-  for i in {1..10}; do
-    if "$@"; then
-      return 0
-    else
-      sleep "${i}"
-    fi
-  done
-  "$@"
-}
 bail() {
   printf '::error::checkout-action: %s\n' "$*"
   exit 1
@@ -83,6 +73,22 @@ if [[ -n "${HAS_TOKEN}" ]]; then
   done
 fi
 
+# See https://github.com/sudo-project/sudo/blob/a40200a08a52515db4bc259c0153e7cd92f309ad/plugins/sudoers/env.c#L133
+# IFS, CDPATH, ENV, BASH_ENV, PS4, GLOBIGNORE, BASHOPTS, SHELLOPTS, FPATH -- unset by action.yml
+# JAVA_TOOL_OPTIONS, _JAVA_OPTIONS, CLASSPATH -- java is unused
+# NULLCMD, READNULLCMD, ZDOTDIR, TMPPREFIX -- zsh is unused
+# RUBYLIB, RUBYOPT -- ruby is unused
+# NODE_OPTIONS, NODE_PATH -- nodejs is unused
+unset LOCALDOMAIN RES_OPTIONS HOSTALIASES NLSPATH PATH_LOCALE
+unset TERMINFO TERMINFO_DIRS TERMPATH TERMCAP
+unset PYTHONHOME PYTHONPATH PYTHONINSPECT PYTHONUSERBASE PYTHONSTARTUP
+unset GIT_SSH_COMMAND GIT_CONFIG_GLOBAL
+unset GCONV_PATH
+# Ignore env vars that will be ignored when running taint checks or running setuid or setgid.
+# See https://perldoc.perl.org/perlrun#ENVIRONMENT
+# NB: Sync with install-required-tools.sh.
+unset PERLLIB PERL5LIB PERL5OPT PERLIO PERLIO_DEBUG PERL5DB PERL5SHELL PERL_HASH_SEED PERL_PERTURB_KEYS PERL_HASH_SEED_DEBUG PERL_USE_UNSAFE_INC PERL_INTERNAL_RAND_SEED PERL_RAND_SEED
+
 sleep=$(resolve_path sleep)
 if [[ -n "${sleep}" ]]; then
   sleep() { "${sleep}" "$1"; }
@@ -91,10 +97,23 @@ else
   # bash read has -t option, but use non-sleep to match src/install-required-tools for now.
   sleep() { :; }
 fi
+retry() {
+  for i in {1..10}; do
+    if "$@"; then
+      return 0
+    else
+      sleep "${i}"
+    fi
+  done
+  "$@"
+}
 is_fake_home=''
 git=$(resolve_path git)
 case "${RUNNER_OS}" in
   Linux)
+    # See "Secure-execution mode" in https://man7.org/linux/man-pages/man8/ld.so.8.html
+    # NB: Sync with install-required-tools.sh.
+    unset HOSTALIASES GCONV_PATH GETCONF_DIR LOCALDOMAIN LOCPATH RESOLV_HOST_CONF NIS_PATH NLSPATH MALLOC_TRACE RES_OPTIONS TMPDIR TZDIR
     lscpu=$(resolve_path lscpu)
     if [[ -n "${lscpu}" ]]; then
       # Output CPU information to make it easier to debug the runner issues.
@@ -162,7 +181,7 @@ case "${RUNNER_OS}" in
       esac
     fi
     ;;
-  *) bail "unrecognized OS '${RUNNER_OS}'" ;;
+  *) bail "unrecognized runner.os '${RUNNER_OS}'" ;;
 esac
 if [[ -n "${HAS_TOKEN}" ]]; then
   od=$(resolve_path od)
@@ -170,6 +189,14 @@ if [[ -n "${HAS_TOKEN}" ]]; then
   if [[ -z "${od}" ]] && [[ -z "${hexdump}" ]]; then
     bail "neither od nor hexdump is unavailable at standard location; aborting due to security reasons because 'token' input option is set"
   fi
+  # If 'token' input option is set, this action prevent the leak of the token as much as possible, even in
+  # compromised environments (or environments that were previously compromised and only incompletely repaired).
+  # Ignore some configs and config overrides to prevent malicious config (e.g., malicious fsmonitor) and/or hooks.
+  # BASH_FUNC_*/ENV/BASH_ENV/CDPATH/SHELLOPTS/BASHOPTS/LD_*/DYLD_* environment variables and profile/rc files, which also affect
+  # non-git programs are handled in action.yml.
+  # TODO: Add respect-* input options that explicitly allow these uses.
+  unset GIT_DIR GIT_WORK_TREE GIT_EXEC_PATH GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+  unset GIT_SSH_COMMAND GIT_SSH GIT_CONFIG_COUNT GIT_CONFIG_PARAMETERS
 fi
 
 wd="${PWD}"
@@ -247,7 +274,12 @@ g "${git}" "${common_args[@]}" config --local gc.auto 0
 
 # Disable askPass to prevent arbitrary code execution if authentication fails.
 # Enforce sslVerify to ensure security of https.
-unset GIT_ASKPASS GIT_SSL_NO_VERIFY
+unset GIT_SSL_NO_VERIFY
+export GIT_ASKPASS=/dev/null
+export SSH_ASKPASS=/dev/null
+export GIT_TERMINAL_PROMPT=0
+# -c credential.interactive=never requires git 2.47.0? https://github.com/git/git/commit/719399b57b3db8471852d86f96ab5db4a40d43ba
+# ssh_cmd="/usr/bin/ssh -oBatchMode=yes -oStrictHostKeyChecking=yes"
 fetch_args=(
   -c core.askPass=/dev/null
   -c "http.${repository_url}.sslVerify=true"

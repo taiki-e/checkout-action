@@ -16,6 +16,24 @@ bail() {
 warn() {
   printf '::warning::checkout-action: %s\n' "$*"
 }
+# Use binaries available at standard location to prevent path interception.
+# See resolve_path in action.yml for more.
+# NB: Sync with it.
+resolve_path() {
+  for dir in /bin /usr/bin /sbin /usr/sbin; do
+    if [ -x "${dir}/$1" ]; then
+      printf '%s/%s\n' "${dir}" "$1"
+      return
+    fi
+  done
+  if [ -e /etc/NIXOS ] && [ -x /run/current-system/sw/bin/"$1" ]; then
+    printf '/run/current-system/sw/bin/%s\n' "$1"
+  elif [ -e /etc/NIXOS ] && [ -x /run/wrappers/bin/"$1" ]; then
+    printf '/run/wrappers/bin/%s\n' "$1"
+  elif [ -e /etc/nix ] && [ -x /root/.nix-profile/bin/"$1" ]; then
+    printf '/root/.nix-profile/bin/%s\n' "$1"
+  fi
+}
 
 # ------------------------------------------------------------------------------
 # Preparation
@@ -110,24 +128,25 @@ if [ -z "${base_distro}" ] && [ -e /etc/nix ] && [ -x /root/.nix-profile/bin/nix
   nix_env=/root/.nix-profile/bin/nix-env
 fi
 
-# Use binaries available at standard location to prevent path interception.
-# See resolve_path in action.yml for more.
-# NB: Sync with it.
-resolve_path() {
-  for dir in /bin /usr/bin /sbin /usr/sbin; do
-    if [ -x "${dir}/$1" ]; then
-      printf '%s/%s\n' "${dir}" "$1"
-      return
-    fi
-  done
-  if [ -e /etc/NIXOS ] && [ -x /run/current-system/sw/bin/"$1" ]; then
-    printf '/run/current-system/sw/bin/%s\n' "$1"
-  elif [ -e /etc/NIXOS ] && [ -x /run/wrappers/bin/"$1" ]; then
-    printf '/run/wrappers/bin/%s\n' "$1"
-  elif [ -e /etc/nix ] && [ -x /root/.nix-profile/bin/"$1" ]; then
-    printf '/root/.nix-profile/bin/%s\n' "$1"
-  fi
-}
+# See https://github.com/sudo-project/sudo/blob/a40200a08a52515db4bc259c0153e7cd92f309ad/plugins/sudoers/env.c#L133
+# IFS, CDPATH, ENV, BASH_ENV, PS4, GLOBIGNORE, BASHOPTS, SHELLOPTS, FPATH -- unset by action.yml
+# JAVA_TOOL_OPTIONS, _JAVA_OPTIONS, CLASSPATH -- java is unused
+# NULLCMD, READNULLCMD, ZDOTDIR, TMPPREFIX -- zsh is unused
+# RUBYLIB, RUBYOPT -- ruby is unused
+# NODE_OPTIONS, NODE_PATH -- nodejs is unused
+unset LOCALDOMAIN RES_OPTIONS HOSTALIASES NLSPATH PATH_LOCALE
+unset TERMINFO TERMINFO_DIRS TERMPATH TERMCAP
+unset PYTHONHOME PYTHONPATH PYTHONINSPECT PYTHONUSERBASE PYTHONSTARTUP
+unset GIT_SSH_COMMAND GIT_CONFIG_GLOBAL
+unset GCONV_PATH
+# Ignore env vars that will be ignored when running taint checks or running setuid or setgid.
+# See https://perldoc.perl.org/perlrun#ENVIRONMENT
+# NB: Sync with main.sh.
+unset PERLLIB PERL5LIB PERL5OPT PERLIO PERLIO_DEBUG PERL5DB PERL5SHELL PERL_HASH_SEED PERL_PERTURB_KEYS PERL_HASH_SEED_DEBUG PERL_USE_UNSAFE_INC PERL_INTERNAL_RAND_SEED PERL_RAND_SEED
+# See "Secure-execution mode" in https://man7.org/linux/man-pages/man8/ld.so.8.html
+# NB: Sync with main.sh.
+unset HOSTALIASES GCONV_PATH GETCONF_DIR LOCALDOMAIN LOCPATH RESOLV_HOST_CONF NIS_PATH NLSPATH MALLOC_TRACE RES_OPTIONS TMPDIR TZDIR
+
 sleep=$(resolve_path sleep)
 if [ -n "${sleep}" ]; then
   sleep() { "${sleep}" "$1"; }

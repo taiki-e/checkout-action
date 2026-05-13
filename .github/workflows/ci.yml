@@ -198,8 +198,12 @@ jobs:
             # anyway due to of "fatal: Couldn't find remote ref" error.
             retry yum install -y openssh-clients perl perl-Error perl-TermReadKey rsync
             retry rpm -i \
-              https://vault.ius.io/el6/x86_64/packages/p/perl-Git18-1.8.5.5-4.ius.el6.noarch.rpm \
-              https://vault.ius.io/el6/x86_64/packages/g/git18-1.8.5.5-4.ius.el6.x86_64.rpm
+              https://vault.ius.io/el6/x86_64/packages/p/perl-Git2u-2.2.0-2.ius.el6.noarch.rpm \
+              https://vault.ius.io/el6/x86_64/packages/g/git2u-2.2.0-2.ius.el6.x86_64.rpm
+          # else
+          #   retry rpm -i \
+          #     https://vault.ius.io/el7/x86_64/packages/p/perl-Git2u-2.1.3-1.ius.el7.noarch.rpm \
+          #     https://vault.ius.io/el7/x86_64/packages/g/git2u-2.1.3-1.ius.el7.x86_64.rpm
           fi
         env:
           CONTAINER: ${{ matrix.container }}

@@ -5,8 +5,19 @@ IFS=$'\n\t'
 
 # "fetch" step of checkout-action.
 #
+# If `token` input option is set, since the token is sensitive data, this action prevent the leak
+# of it as much as possible, even in compromised environments (or environments that were previously
+# compromised and only incompletely repaired) by preventing attacks such as arbitrary code execution/URL
+# manipulation/authentication bypass through malicious configs or environment variables.
+#
+# Unless binaries in the system's standard locations or the runner's memory have been compromised,
+# the only way to steal sensitive data during this script's execution should be for a process launched
+# before this action to read the token passed via environment variables and exposed in `/proc/*/environ`.
+# Note that passing input to actions without using environment variables is not practical, regardless of the
+# kind of action. See https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax#inputs.
+#
 # "checkout" step is separated into a different step that does not handle sensitive data (checkout.sh),
-# because it does not require tokens.
+# because it does not require tokens and is difficult to reliably block filter.*.smudge/process/clean.
 #
 # "prepare" step, which includes installing Git, is also separated into a different step that does not
 # handle sensitive data (pre.sh), because it does not require tokens and may take some time (i.g., the time

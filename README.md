@@ -3,7 +3,7 @@
 [![release](https://img.shields.io/github/release/taiki-e/checkout-action?style=flat-square&logo=github)](https://github.com/taiki-e/checkout-action/releases/latest)
 [![github actions](https://img.shields.io/github/actions/workflow/status/taiki-e/checkout-action/ci.yml?branch=main&style=flat-square&logo=github)](https://github.com/taiki-e/checkout-action/actions)
 
-GitHub Action for checking out a repository. (Simplified [actions/checkout] alternative that does not depend on Node.js.)
+GitHub Action for checking out a repository. (Simplified and security-enhanced [actions/checkout] alternative that does not depend on Node.js.)
 
 - [Usage](#usage)
   - [Inputs](#inputs)
@@ -60,11 +60,17 @@ As of 2024-03-08, the latest version of [actions/checkout] that uses node20 [doe
 
 Also, in `actions/*` actions, each update of the Node.js used increments the major version (it is the correct behavior for compatibility although), so workflows that use it require maintenance on a regular basis. (Unless you have fully automated dependency updates.)
 
-In addition to not using tokens by default, this action does not write credentials to disk even if `token` input option is set, but actions/checkout (as of 6.0.2) [writes credentials to disk as plaintext even when `persist-credentials` is set to `false`, when git is available](https://github.com/taiki-e/checkout-action/pull/16). Therefore, this action is considered more secure than actions/checkout not only by default but also when `persist-credentials` is set to `false`.
+In addition to not using tokens by default, this action does not write credentials to disk even if `token` input option is set and mitigates the risk of token leaks by combining multiple methods (see the ["Security" section](#security) for details), but actions/checkout (as of 6.0.2) [writes credentials to disk as plaintext even when `persist-credentials` is set to `false`, when git is available](https://github.com/taiki-e/checkout-action/pull/16). Therefore, this action is considered more secure than actions/checkout not only by default but also when `persist-credentials` is set to `false`.
 
 ## Security
 
 The `@v<major>` tags are updated with each release. If you want to enhance workflow stability and security against supply chain attacks, consider using the `@v<major>.<minor>.<patch>` tag or their hash to pin the version and regularly updating with dependency cooldown. Since all releases are immutable, pinning the version in either way should have the same effect.
+
+By default, this action doesn't handle any sensitive data such as GitHub tokens.
+
+If `token` input option is set, since the token is sensitive data, this action prevent the leak of it as much as possible, even in compromised environments (or environments that were previously compromised and only incompletely repaired) by preventing attacks such as arbitrary code execution/URL manipulation/authentication bypass through malicious configs or environment variables. See comments in [fetch.sh](fetch.sh) for details.
+
+Many of the security measures mentioned above apply even when `token` input option is not set, but some currently generate only warnings for compatibility reasons.
 
 ## Compatibility
 

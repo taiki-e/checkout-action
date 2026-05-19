@@ -37,8 +37,9 @@ runs:
         #   On nixos/nix image (which has no /etc/NIXOS), they are available at /root/.nix-profile/bin.
         # - git is usually available at ~/.nix-profile/bin when installed by system package manager.
         # See "Compatibility" section in README.md for partial list of tested distributions.
-        # NB: Sync with resolve_path in src/*.sh and tools/ci/test-bash-func.sh.
+        # git also uses binaries available at standard location by default:
         # https://github.com/git/git/blob/v2.54.0/Makefile#L927-L935
+        # NB: Sync with resolve_path in src/*.sh and tools/ci/test-bash-func.sh.
         resolve_path() {
           for dir in /bin /usr/bin /sbin /usr/sbin; do
             if [ -x "${dir}/$1" ]; then

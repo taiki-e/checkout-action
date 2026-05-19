@@ -294,13 +294,13 @@ if [[ -n "${HAS_TOKEN}" ]]; then
   # URL is the same.)
   # So using a sufficiently long random value as URL placeholder and replacing
   # it with -c option, to mitigate the risk of token leaks caused by compromised
-  # global/local config. Since there is a (short) interval between the command
-  # being exposed in /proc/*/cmdline and the config being resolved, it is
-  # technically possible for a malicious url.*.insteadOf to inject local/global
-  # config, causing a malicious repository hosted on the same host to be checked
-  # out (though this is hard because we specify SHA in refspec). Anyway, thanks
-  # to credential helper's hostname verification, sending credentials to a
-  # malicious host should be prevented.
+  # global/local config. Since there is a brief window between the command being
+  # exposed in /proc/*/cmdline and the config being resolved, it is technically
+  # possible for a malicious url.*.insteadOf to inject local/global config,
+  # causing a malicious repository hosted on the same host to be checked out
+  # (though this is hard because we specify SHA in refspec).
+  # Anyway, thanks to credential helper's hostname verification, sending
+  # credentials to a malicious host should be prevented.
   rand() {
     # od is probably the most common, but it isn’t installed by default on OpenWrt.
     # NB: Sync with test in tools/ci/test-bash-func.sh.

@@ -16,6 +16,24 @@ bail() {
 warn() {
   printf '::warning::checkout-action: %s\n' "$*"
 }
+# Use binaries available at standard location to prevent path interception.
+# See resolve_path in action.yml for more.
+# NB: Sync with it.
+resolve_path() {
+  for dir in /bin /usr/bin /sbin /usr/sbin; do
+    if [ -x "${dir}/$1" ]; then
+      printf '%s/%s\n' "${dir}" "$1"
+      return
+    fi
+  done
+  if [ -e /etc/NIXOS ] && [ -x /run/current-system/sw/bin/"$1" ]; then
+    printf '/run/current-system/sw/bin/%s\n' "$1"
+  elif [ -e /etc/NIXOS ] && [ -x /run/wrappers/bin/"$1" ]; then
+    printf '/run/wrappers/bin/%s\n' "$1"
+  elif [ -e /etc/nix ] && [ -x /root/.nix-profile/bin/"$1" ]; then
+    printf '/root/.nix-profile/bin/%s\n' "$1"
+  fi
+}
 
 # ------------------------------------------------------------------------------
 # Preparation
@@ -28,6 +46,11 @@ git=$(command -v git 2>/dev/null || :)
 if [ -n "${bash}" ] && [ -n "${git}" ]; then
   bail 'internal error: unreachable'
 fi
+
+# This prevents tokens from being exposed to subprocesses via environment variables.
+# Note that this does not prevent token leaks via reading `/proc/*/environ`.
+# It only reduces the risk of leaks.
+unset INPUT_TOKEN
 
 # Detect distribution.
 # Note that we don't do package manager command based detection here because there might be another
@@ -110,24 +133,6 @@ if [ -z "${base_distro}" ] && [ -e /etc/nix ] && [ -x /root/.nix-profile/bin/nix
   nix_env=/root/.nix-profile/bin/nix-env
 fi
 
-# Use binaries available at standard location to prevent path interception.
-# See resolve_path in action.yml for more.
-# NB: Sync with it.
-resolve_path() {
-  for dir in /bin /usr/bin /sbin /usr/sbin; do
-    if [ -x "${dir}/$1" ]; then
-      printf '%s/%s\n' "${dir}" "$1"
-      return
-    fi
-  done
-  if [ -e /etc/NIXOS ] && [ -x /run/current-system/sw/bin/"$1" ]; then
-    printf '/run/current-system/sw/bin/%s\n' "$1"
-  elif [ -e /etc/NIXOS ] && [ -x /run/wrappers/bin/"$1" ]; then
-    printf '/run/wrappers/bin/%s\n' "$1"
-  elif [ -e /etc/nix ] && [ -x /root/.nix-profile/bin/"$1" ]; then
-    printf '/root/.nix-profile/bin/%s\n' "$1"
-  fi
-}
 sleep=$(resolve_path sleep)
 if [ -n "${sleep}" ]; then
   sleep() { "${sleep}" "$1"; }

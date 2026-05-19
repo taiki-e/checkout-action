@@ -12,24 +12,6 @@ g() {
   "$@" 2>&1
   printf '::endgroup::\n'
 }
-g_for_hw_info() {
-  IFS=' '
-  builtin local cmd="$*"
-  IFS=$'\n\t'
-  printf '::group::Show hardware information (%s)\n' "${cmd#retry }"
-  "$@" 2>&1 || :
-  printf '::endgroup::\n'
-}
-retry() {
-  for i in {1..10}; do
-    if "$@"; then
-      return 0
-    else
-      sleep "${i}"
-    fi
-  done
-  "$@"
-}
 bail() {
   printf '::error::checkout-action: %s\n' "$*"
   exit 1
@@ -56,32 +38,25 @@ resolve_path() {
   fi
 }
 
+# ------------------------------------------------------------------------------
+# Preparation
+
+is_fake_home=''
+case "${RUNNER_OS}" in
+  Windows)
+    # See action.yml.
+    printf '' >|"${USERPROFILE}/.checkout-action-init"
+    if [[ "${HOME}" == '/home/'* ]]; then
+      is_fake_home=1
+    fi
+    ;;
+esac
+
 token="${INPUT_TOKEN}"
 # This prevents tokens from being exposed to subprocesses via environment variables.
 # Note that this does not prevent token leaks via reading `/proc/*/environ` on Linux or
 # via `ps -Eww` on macOS. It only reduces the risk of leaks.
 unset INPUT_TOKEN
-# This prevents tokens from being exposed to log when tracing is activated.
-unset GIT_TRACE_REDACT GIT_TRACE2_REDACT GIT_CURL_VERBOSE GIT_TRACE_CURL
-
-repository_url="${INPUT_SERVER_URL}/${INPUT_REPOSITORY}"
-
-# Since we currently do not support checking out other repositories, this should always be enforced.
-# https://github.blog/security/application-security/improving-git-protocol-security-github/
-export GIT_ALLOW_PROTOCOL=https:ssh
-
-if [[ -n "${HAS_TOKEN}" ]]; then
-  protocol="${INPUT_SERVER_URL%%://*}"
-  hostname="${INPUT_SERVER_URL#*://}"
-  hostname="${hostname%%/*}"
-  # Sanitize inputs and runner-provided environment variables for credential helper which uses line-separated format.
-  # Also sanitize encoded newline (%0a) and carriage return (\r, %0d) for old git affected by CVE-2020-5260/CVE-2024-52006.
-  for c in $'\n' '%0a' '%0A' $'\r' '%0d' '%0D'; do
-    if [[ "${protocol}" == *"${c}"* ]] || [[ "${hostname}" == *"${c}"* ]] || [[ "${token}" == *"${c}"* ]]; then
-      bail "github.server_url and 'token' input option must not contain newline"
-    fi
-  done
-fi
 
 sleep=$(resolve_path sleep)
 if [[ -n "${sleep}" ]]; then
@@ -91,48 +66,19 @@ else
   # bash read has -t option, but use non-sleep to match src/install-required-tools for now.
   sleep() { :; }
 fi
-is_fake_home=''
+retry() {
+  for i in {1..10}; do
+    if "$@"; then
+      return 0
+    else
+      sleep "${i}"
+    fi
+  done
+  "$@"
+}
 git=$(resolve_path git)
 case "${RUNNER_OS}" in
-  Linux)
-    lscpu=$(resolve_path lscpu)
-    if [[ -n "${lscpu}" ]]; then
-      # Output CPU information to make it easier to debug the runner issues.
-      g_for_hw_info "${lscpu}"
-    fi
-    if [[ -z "${git}" ]]; then
-      git=$(builtin type -P git || :)
-      if [[ -z "${git}" ]]; then
-        bail "this action requires git"
-      elif [[ -n "${HAS_TOKEN}" ]]; then
-        bail "git is unavailable at standard location; found ${git}; aborting due to security reasons because 'token' input option is set"
-      else
-        warn "git is unavailable at standard location; using ${git}, but this may be blocked for security reasons in the future"
-      fi
-    fi
-    ;;
-  macOS)
-    # Output CPU information to make it easier to debug the runner issues.
-    g_for_hw_info /usr/sbin/sysctl hw.optional machdep.cpu
-    if [[ -z "${git}" ]]; then
-      git=$(builtin type -P git || :)
-      if [[ -z "${git}" ]]; then
-        bail "this action requires git"
-      elif [[ -n "${HAS_TOKEN}" ]]; then
-        bail "git is unavailable at standard location; found ${git}; aborting due to security reasons because 'token' input option is set"
-      else
-        warn "git is unavailable at standard location; using ${git}, but this may be blocked for security reasons in the future"
-      fi
-    fi
-    ;;
   Windows)
-    if [[ "${HOME}" == "/home/"* ]]; then
-      is_fake_home=1
-    fi
-    # See action.yml.
-    printf '' >|"${USERPROFILE}/.checkout-action-init"
-    # Output CPU information to make it easier to debug the runner issues.
-    g_for_hw_info 'C:\Windows\system32\systeminfo.exe'
     if [[ -z "${git}" ]]; then
       git=$(builtin type -P git || :)
       case "${git}" in
@@ -162,7 +108,18 @@ case "${RUNNER_OS}" in
       esac
     fi
     ;;
-  *) bail "unrecognized OS '${RUNNER_OS}'" ;;
+  *)
+    if [[ -z "${git}" ]]; then
+      git=$(builtin type -P git || :)
+      if [[ -z "${git}" ]]; then
+        bail "this action requires git"
+      elif [[ -n "${HAS_TOKEN}" ]]; then
+        bail "git is unavailable at standard location; found ${git}; aborting due to security reasons because 'token' input option is set"
+      else
+        warn "git is unavailable at standard location; using ${git}, but this may be blocked for security reasons in the future"
+      fi
+    fi
+    ;;
 esac
 if [[ -n "${HAS_TOKEN}" ]]; then
   od=$(resolve_path od)
@@ -170,6 +127,51 @@ if [[ -n "${HAS_TOKEN}" ]]; then
   if [[ -z "${od}" ]] && [[ -z "${hexdump}" ]]; then
     bail "neither od nor hexdump is unavailable at standard location; aborting due to security reasons because 'token' input option is set"
   fi
+fi
+
+# ------------------------------------------------------------------------------
+# Output CPU information to make it easier to debug the runner issues.
+
+hw_info() {
+  IFS=' '
+  builtin local cmd="$*"
+  IFS=$'\n\t'
+  printf '::group::Show hardware information (%s)\n' "${cmd#retry }"
+  "$@" 2>&1 || :
+  printf '::endgroup::\n'
+}
+case "${RUNNER_OS}" in
+  Linux)
+    lscpu=$(resolve_path lscpu)
+    if [[ -n "${lscpu}" ]]; then
+      hw_info "${lscpu}"
+    fi
+    ;;
+  macOS) hw_info /usr/sbin/sysctl hw.optional machdep.cpu ;;
+  Windows) hw_info 'C:\Windows\system32\systeminfo.exe' ;;
+esac
+
+# ------------------------------------------------------------------------------
+# Checkout
+
+# This prevents tokens from being exposed to log when tracing is activated.
+unset GIT_TRACE_REDACT GIT_TRACE2_REDACT GIT_CURL_VERBOSE GIT_TRACE_CURL
+# Since we currently do not support checking out other repositories, this should always be enforced.
+# https://github.blog/security/application-security/improving-git-protocol-security-github/
+export GIT_ALLOW_PROTOCOL=https:ssh
+
+repository_url="${INPUT_SERVER_URL}/${INPUT_REPOSITORY}"
+if [[ -n "${HAS_TOKEN}" ]]; then
+  protocol="${INPUT_SERVER_URL%%://*}"
+  hostname="${INPUT_SERVER_URL#*://}"
+  hostname="${hostname%%/*}"
+  # Sanitize inputs and runner-provided environment variables for credential helper which uses line-separated format.
+  # Also sanitize encoded newline (%0a) and carriage return (\r, %0d) for old git affected by CVE-2020-5260/CVE-2024-52006.
+  for c in $'\n' '%0a' '%0A' $'\r' '%0d' '%0D'; do
+    if [[ "${protocol}" == *"${c}"* ]] || [[ "${hostname}" == *"${c}"* ]] || [[ "${token}" == *"${c}"* ]]; then
+      bail "github.server_url and 'token' input option must not contain newline"
+    fi
+  done
 fi
 
 wd="${PWD}"

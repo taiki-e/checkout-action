@@ -8,8 +8,12 @@ set -x
 
 type -P bash >&2
 bash --version >&2
-for cmd in git sleep awk sed grep; do
-  type -P "${cmd}" >&2
+for cmd in git sleep od hexdump awk sed grep; do
+  if [[ "${cmd}" == 'hexdump' ]] && [[ "${CONTAINER:-}" == 'windows-'* ]]; then
+    type -P "${cmd}" >&2 || true
+  else
+    type -P "${cmd}" >&2
+  fi
   "${cmd}" --version >&2 || true
 done
 

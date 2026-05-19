@@ -38,12 +38,16 @@ openeuler
 openmandriva
 opkg
 oraclelinux
+PERLIO
+PERLLIB
 pico
 pluginconf
 refspec
 rockylinux
 rootfs
 runneradmin
+setgid
+setuid
 sles
 sslv
 systeminfo

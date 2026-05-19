@@ -52,6 +52,11 @@ fi
 # It only reduces the risk of leaks.
 unset INPUT_TOKEN
 
+# Ignore environment variables that will be ignored when running taint checks, setuid, or setgid.
+# See https://perldoc.perl.org/perlrun#ENVIRONMENT
+# NB: Sync with main.sh.
+unset PERLLIB PERL5LIB PERL5OPT PERLIO PERLIO_DEBUG PERL5DB PERL5SHELL PERL_HASH_SEED PERL_PERTURB_KEYS PERL_HASH_SEED_DEBUG PERL_USE_UNSAFE_INC PERL_INTERNAL_RAND_SEED PERL_RAND_SEED
+
 # Detect distribution.
 # Note that we don't do package manager command based detection here because there might be another
 # command with the same name.

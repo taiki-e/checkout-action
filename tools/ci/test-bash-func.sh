@@ -347,9 +347,27 @@ hexdump_hex() {
     return 1
   fi
 }
+bash_hex() {
+  if [[ "${BASH_VERSION}" == '3.'* ]] || { [[ "${BASH_VERSION}" == '4.'* ]] && [[ "$(ldd --version 2>&1 || true)" == *'musl'* ]]; }; then
+    return 1 # old bash is broken with while read loop with stdin containing null (or non ASCII?) byte.
+  fi
+  rand=''
+  while IFS= LC_ALL=C read -rd '' -n1 b; do
+    printf -v b '%02x' "'${b}"
+    [[ "${#b}" -eq 2 ]] || continue
+    rand+="${b}"
+    [[ "${#rand}" -lt 128 ]] || break
+  done
+  if [[ "${#rand}" -ne 128 ]]; then
+    return 1
+  fi
+}
 tmp=$(mktemp)
 trap -- 'rm -f -- "${tmp:?}"' EXIT
+count=0
+bash_rand_match=0
 test_hex() {
+  _=$((count++))
   od_hex <"${tmp}"
   res="${rand}"
   if [[ -n "${hexdump}" ]]; then
@@ -363,13 +381,32 @@ test_hex() {
       *) bail "missing hexdump" ;;
     esac
   fi
+  if [[ "${BASH_VERSION}" == '3.'* ]] || { [[ "${BASH_VERSION}" == '4.'* ]] && [[ "$(ldd --version 2>&1 || true)" == *'musl'* ]]; }; then
+    return
+  fi
+  bash_hex <"${tmp}"
+  if [[ "${res}" == "${rand}" ]]; then
+    _=$((bash_rand_match++))
+  fi
 }
 printf 'cfdc8041987654c6ae1c40bdaa4da84ad7f6dd8a275f506403493d37d704ea647bb7f1ed834e3b21b57ae92840f8d3641a7947ecb53ae6fa1d2a658676613d620' >|"${tmp}"
 test_hex
 if [[ "${res}" != "63666463383034313938373635346336616531633430626461613464613834616437663664643861323735663530363430333439336433376437303465613634" ]]; then
   exit 1
 fi
-for _i in {0..200}; do
+for _i in {0..300}; do
   head -c 128 </dev/urandom >|"${tmp}"
   test_hex
 done
+case "${CONTAINER:-}" in
+  ubuntu-2*)
+    [[ "${bash_rand_match}" -gt 250 ]] || exit 1
+    [[ "${bash_rand_match}" -ne "${count}" ]] || exit 1
+    ;;
+  macos-* | alt:p8 | alpine:3.[0-9] | openwrt/rootfs:x86-64-18.06.9)
+    [[ "${bash_rand_match}" -eq 0 ]] || exit 1
+    ;;
+  *)
+    [[ "${bash_rand_match}" -eq "${count}" ]] || exit 1
+    ;;
+esac

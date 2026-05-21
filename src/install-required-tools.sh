@@ -76,7 +76,7 @@ elif [ -e /etc/redhat-release ] || [ -e /etc/photon-release ] || [ -e /etc/openE
   # wrlinux lts 19-22 has no /etc/redhat-release and ID_LIKE fedora, but has ID wrlinux-graphics
   # wrlinux lts 23 full has no /etc/redhat-release and ID_LIKE fedora, but has ID wrdistro
   # wrlinux lts 23 minimal has no /etc/redhat-release and /etc/os-release
-  # openeuler has /etc/openEuler-release and ID openEuler
+  # openeuler has no /etc/redhat-release and ID_LIKE fedora, but has /etc/openEuler-release and ID openEuler
   base_distro=fedora
 elif [ -e /etc/alpine-release ]; then
   # alpine (at least 3.1+) has /etc/alpine-release and ID alpine
@@ -117,7 +117,7 @@ elif [ -e /etc/os-release ]; then
   case " ${id%[\"\']} ${id_like%[\"\']} " in
     # Ubuntu and some Ubuntu-based distro have ID_LIKE debian, but some Ubuntu-based distro have only ID_LIKE ubuntu: https://github.com/search?q=repo%3Achef%2Fos_release+%2FID_LIKE%3D.*ubuntu%2F&type=code
     *\ debian\ * | *\ ubuntu\ *) base_distro=debian ;;
-    # photon/wrlinux/openeuler is not Fedora-based, but uses tdnf/dnf/dnf.
+    # photon/wrlinux is not Fedora-based, but uses tdnf/dnf.
     *\ fedora\ * | *\ openmandriva\ * | *\ altlinux\ * | *\ photon\ * | *\ wrlinux* | *\ wrdistro* | *\ openEuler\ *) base_distro=fedora ;;
     # Old SLE don't have ID/ID_LIKE suse https://github.com/search?q=repo%3Achef%2Fos_release+%2FID%3D.*sle%28s%7Cd%29%2F&type=code
     *\ suse\ * | *\ sles* | *\ sled*) base_distro=suse ;;

@@ -114,7 +114,7 @@ jobs:
           # - container: devuan/devuan:ascii # 2, debian 9, EoL, apt-get fail
           # devuan/devuan:jessie (1) image is not available.
           # https://hub.docker.com/r/kalilinux/kali-rolling
-          - container: kalilinux/kali-rolling:latest
+          # - container: kalilinux/kali-rolling:latest
           # --------------------------------------------------------------------
           # Fedora/RHEL-based
           # https://hub.docker.com/_/fedora

@@ -56,6 +56,13 @@ unset INPUT_TOKEN
 # See https://perldoc.perl.org/perlrun#ENVIRONMENT
 # NB: Sync with main.sh.
 unset PERLLIB PERL5LIB PERL5OPT PERLIO PERLIO_DEBUG PERL5DB PERL5SHELL PERL_HASH_SEED PERL_PERTURB_KEYS PERL_HASH_SEED_DEBUG PERL_USE_UNSAFE_INC PERL_INTERNAL_RAND_SEED PERL_RAND_SEED
+# Do similar for Python.
+# See
+# - https://docs.python.org/3/using/cmdline.html#environment-variables
+# - https://docs.python.org/2/using/cmdline.html#environment-variables
+# NB: Sync with main.sh.
+unset PYTHONHOME PYTHONPATH PYTHONPLATLIBDIR PYTHONSTARTUP PYTHONINSPECT PYTHONHASHSEED PYTHONUSERBASE PYTHONHTTPSVERIFY
+export PYTHONSAFEPATH=1
 
 # Detect distribution.
 # Note that we don't do package manager command based detection here because there might be another

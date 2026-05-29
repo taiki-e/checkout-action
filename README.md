@@ -68,7 +68,7 @@ The `@v<major>` tags are updated with each release. If you want to enhance workf
 
 ## Compatibility
 
-This action has been [tested](https://github.com/taiki-e/checkout-action/blob/HEAD/.github/workflows/ci.yml) for GitHub-hosted runners (Ubuntu, macOS, Windows) and containers (Debian, Ubuntu, Devuan, Kali, Fedora, CentOS, UBI, Alma, Rocky, Amazon, Oracle, Mageia, OpenMandriva, ALT, Photon, Wind River, openEuler, openSUSE, Alpine, OpenWrt, Wolfi, Arch, Artix, CachyOS, Manjaro, Gentoo, Void, Vanilla, Nix).
+This action has been [tested](https://github.com/taiki-e/checkout-action/blob/HEAD/.github/workflows/ci.yml) for GitHub-hosted runners (Ubuntu, macOS, Windows) and containers (Debian, Ubuntu, Devuan, Kali, Fedora, Red Hat UBI, CentOS, Alma, Rocky, Oracle, Amazon, Mageia, OpenMandriva, ALT, Photon, Wind River, openEuler, openSUSE, Alpine, OpenWrt, Wolfi, Arch, Artix, CachyOS, Manjaro, Gentoo, Void, Vanilla, Nix).
 
 On Linux, if any required tools are missing, this action will [attempt to install them from system package manager](https://github.com/taiki-e/checkout-action/blob/HEAD/src/install-required-tools.sh), so no pre-setup is usually required (except for CentOS or Debian 10 (or older) or very old distro described below, which was already EoL and needs to use vault/archive repos -- see "Install requirements" in [our CI config](https://github.com/taiki-e/checkout-action/blob/HEAD/.github/workflows/ci.yml) for example of setup).
 

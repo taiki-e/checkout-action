@@ -61,176 +61,195 @@ jobs:
           - os: windows-11-arm
           # --------------------------------------------------------------------
           # Containers
-          # See also https://github.com/taiki-e/dockerfiles/blob/HEAD/tools/container-info.sh.
+          # See https://github.com/taiki-e/dockerfiles/blob/HEAD/tools/container-info.sh
+          # for EoL and libc versions.
           # --------------------------------------------------------------------
           # Debian-based
           # https://hub.docker.com/_/debian
           # https://hub.docker.com/r/debian/eol
-          - container: debian:sid # glibc
-          - container: debian:testing # glibc
-          - container: debian:13-slim # glibc 2.41, git 2.47
+          - container: debian:unstable-slim
+          - container: debian:testing-slim
+          - container: debian:13-slim # git 2.47
           - container: debian:13-slim
             sudo: sudo
           - container: debian:13-slim
             sudo: doas
-          - container: debian:12-slim # glibc 2.36, git 2.39
-          - container: debian:11-slim # glibc 2.31, git 2.30, EoL
-          - container: debian:10-slim # glibc 2.28, git 2.20, EoL, end of LTS
-          - container: debian:9-slim # glibc 2.24, git 2.11, EoL, end of LTS
-          - container: debian/eol:jessie-slim # 8, glibc 2.19, git 2.1, EoL, end of LTS
-          # - container: debian/eol:wheezy-slim # 7, glibc 2.13, git 1.7, EoL, end of LTS, git too old
-          # - container: debian/eol:squeeze-slim # 6, glibc 2.11.3, git 1.7, EoL, end of LTS, git too old
-          # - container: debian/eol:lenny-slim # 5, glibc 2.7, git ?, EoL, apt-get fail
-          # - container: debian/eol:etch-slim # 4, glibc 2.3.6, git ?, EoL, apt-get has no --no-install-recommends
-          # - container: debian/eol:sarge-slim # 3.1, glibc 2.3.2, git ?, EoL, apt-get has no --no-install-recommends
-          # - container: debian/eol:woody-slim # 3.0, glibc 2.2.5, git ?, EoL, "Error response from daemon: container <hash> is not running"
-          # - container: debian/eol:potato-slim # 2.2, glibc 2.1.3, git ?, EoL, "Error response from daemon: container <hash> is not running"
-          # - container: debian/eol:slink-slim # 2.1, glibc 2.0.7, git ?, EoL, "Error response from daemon: container <hash> is not running"
+          - container: debian:12-slim # git 2.39
+          - container: debian:11-slim # git 2.30, EoL
+          - container: debian:10-slim # git 2.20, EoL, end of LTS
+          - container: debian:9-slim # git 2.11, EoL, end of LTS
+          - container: debian/eol:jessie-slim # 8, git 2.1, EoL, end of LTS, end of ELTS
+          # - container: debian/eol:wheezy-slim # 7, git 1.7, EoL, end of LTS, end of ELTS # git too old
+          # - container: debian/eol:squeeze-slim # 6, git 1.7, EoL, end of LTS # git too old
+          # - container: debian/eol:lenny-slim # 5, git ?, EoL # apt-get fail
+          # - container: debian/eol:etch-slim # 4, git ?, EoL # apt-get has no --no-install-recommends
+          # - container: debian/eol:sarge-slim # 3.1, git ?, EoL # apt-get has no --no-install-recommends
+          # - container: debian/eol:woody-slim # 3.0, git ?, EoL # "Error response from daemon: container <hash> is not running"
+          # - container: debian/eol:potato-slim # 2.2, git ?, EoL # "Error response from daemon: container <hash> is not running"
+          # - container: debian/eol:slink-slim # 2.1, git ?, EoL # "Error response from daemon: container <hash> is not running"
           # debian:6 image uses legacy image format (use debian/eol images instead).
           # debian/eol:hamm-slim (2.0) image is not available.
           # https://hub.docker.com/_/ubuntu
-          - container: ubuntu:devel # glibc
-          - container: ubuntu:rolling # glibc
-          - container: ubuntu:26.04 # glibc 2.43, git 2.53
+          - container: ubuntu:devel
+          - container: ubuntu:rolling
+          - container: ubuntu:26.04 # git 2.53
           - container: ubuntu:26.04
             sudo: sudo
           - container: ubuntu:26.04
             sudo: doas
-          - container: ubuntu:24.04 # glibc 2.39, git 2.43
-          - container: ubuntu:22.04 # glibc 2.35, git 2.34
-          - container: ubuntu:20.04 # glibc 2.31, git 2.25, EoL
-          - container: ubuntu:18.04 # glibc 2.27, git 2.17, EoL
-          - container: ubuntu:16.04 # glibc 2.23, git 2.7, EoL, end of ESM
-          - container: ubuntu:14.04 # glibc 2.19, git 1.9, EoL, end of ESM
-          # - container: ubuntu:12.04 # glibc 2.15, git 1.7, EoL, end of ESM, git too old
+          - container: ubuntu:24.04 # git 2.43
+          - container: ubuntu:22.04 # git 2.34
+          - container: ubuntu:20.04 # git 2.25, EoL
+          - container: ubuntu:18.04 # git 2.17, EoL
+          - container: ubuntu:16.04 # git 2.7, EoL, end of ESM
+          - container: ubuntu:14.04 # git 1.9, EoL, end of ESM
+          # - container: ubuntu:12.04 # git 1.7, EoL, end of ESM # git too old
           # ubuntu:10.04 image uses legacy image format.
           # https://hub.docker.com/r/devuan/devuan
-          - container: devuan/devuan:unstable
-          - container: devuan/devuan:testing
-          - container: devuan/devuan:excalibur # 6, debian 13
-          - container: devuan/devuan:daedalus # 5, debian 12
-          - container: devuan/devuan:chimaera # 4, debian 11
-          # - container: devuan/devuan:beowulf # 3, debian 10, EoL, apt-get fail
-          # - container: devuan/devuan:ascii # 2, debian 9, EoL, apt-get fail
+          # https://www.devuan.org/os/releases
+          # https://endoflife.date/devuan
+          # Skip old/pre-release versions by default.
+          - container: devuan/devuan:latest
+          # - container: devuan/devuan:unstable
+          # - container: devuan/devuan:testing
+          # - container: devuan/devuan:excalibur # 6, debian 13
+          # - container: devuan/devuan:daedalus # 5, debian 12
+          # - container: devuan/devuan:chimaera # 4, debian 11
+          # - container: devuan/devuan:beowulf # 3, debian 10, EoL # apt-get fail
+          # - container: devuan/devuan:ascii # 2, debian 9, EoL # apt-get fail
           # devuan/devuan:jessie (1) image is not available.
           # https://hub.docker.com/r/kalilinux/kali-rolling
-          # - container: kalilinux/kali-rolling:latest
+          - container: kalilinux/kali-rolling:latest
           # --------------------------------------------------------------------
           # Fedora/RHEL-based
           # https://hub.docker.com/_/fedora
-          - container: fedora:rawhide # glibc
-          - container: fedora:44 # glibc 2.43, git 2.54
+          - container: fedora:rawhide
+          - container: fedora:44 # git 2.54
           - container: fedora:44
             sudo: sudo
           - container: fedora:44
             sudo: doas
-          - container: fedora:43 # glibc 2.42, git 2.54
-          - container: fedora:42 # glibc 2.41, git 2.54
+          - container: fedora:43 # git 2.54
           # Skip intermediate versions that have reached EoL by default.
-          # - container: fedora:41 # glibc 2.40, git ?, EoL
-          # - container: fedora:40 # glibc 2.39, git ?, EoL
-          # - container: fedora:39 # glibc 2.38, git ?, EoL
-          # - container: fedora:38 # glibc 2.37, git ?, EoL
-          # - container: fedora:37 # glibc 2.36, git ?, EoL
-          # - container: fedora:36 # glibc 2.35, git ?, EoL
-          # - container: fedora:35 # glibc 2.34, git ?, EoL
-          # - container: fedora:34 # glibc 2.33, git ?, EoL
-          # - container: fedora:33 # glibc 2.32, git ?, EoL
-          # - container: fedora:32 # glibc 2.31, git ?, EoL
-          # - container: fedora:31 # glibc 2.30, git ?, EoL
-          # - container: fedora:30 # glibc 2.29, git ?, EoL
-          # - container: fedora:29 # glibc 2.28, git ?, EoL
-          # - container: fedora:28 # glibc 2.27, git ?, EoL
-          # - container: fedora:27 # glibc 2.26, git ?, EoL
-          # - container: fedora:26 # glibc 2.25, git ?, EoL
-          # - container: fedora:25 # glibc 2.24, git ?, EoL
-          # - container: fedora:24 # glibc 2.23, git ?, EoL
-          # - container: fedora:23 # glibc 2.22, git ?, EoL
-          # - container: fedora:22 # glibc 2.21, git 2.4, EoL
-          # - container: fedora:21 # glibc 2.20, git 2.1, EoL, "fatal: unable to access 'https://github.com/taiki-e/checkout-action/': Peer's Certificate issuer is not recognized." with git fetch
-          - container: fedora:20 # glibc 2.18, git 1.9, EoL
+          # - container: fedora:42 # git 2.54, EoL
+          # - container: fedora:41 # git ?, EoL
+          # - container: fedora:40 # git ?, EoL
+          # - container: fedora:39 # git ?, EoL
+          # - container: fedora:38 # git ?, EoL
+          # - container: fedora:37 # git ?, EoL
+          # - container: fedora:36 # git ?, EoL
+          # - container: fedora:35 # git ?, EoL
+          # - container: fedora:34 # git ?, EoL
+          # - container: fedora:33 # git ?, EoL
+          # - container: fedora:32 # git ?, EoL
+          # - container: fedora:31 # git ?, EoL
+          # - container: fedora:30 # git ?, EoL
+          # - container: fedora:29 # git ?, EoL
+          # - container: fedora:28 # git ?, EoL
+          # - container: fedora:27 # git ?, EoL
+          # - container: fedora:26 # git ?, EoL
+          # - container: fedora:25 # git ?, EoL
+          # - container: fedora:24 # git ?, EoL
+          # - container: fedora:23 # git ?, EoL
+          # - container: fedora:22 # git 2.4, EoL
+          # - container: fedora:21 # git 2.1, EoL # "fatal: unable to access 'https://github.com/taiki-e/checkout-action/': Peer's Certificate issuer is not recognized." with git fetch
+          - container: fedora:20 # git 1.9, EoL
           # fedora:19 image is not available
-          # https://hub.docker.com/_/centos
-          - container: centos:7 # glibc 2.17, git 1.8, EoL
-          - container: centos:6 # glibc 2.12, git 1.7, EoL
-          # - container: centos:5 # glibc 2.5, git ?, EoL, "M2Crypto.SSL.SSLError: sslv3 alert handshake failure" error with yum
-          # centos:4 image is not available
           # https://hub.docker.com/r/redhat/ubi10
           # https://hub.docker.com/r/redhat/ubi10-minimal
           # https://hub.docker.com/r/redhat/ubi9
           # https://hub.docker.com/r/redhat/ubi9-minimal
           # https://hub.docker.com/r/redhat/ubi8
           # https://hub.docker.com/r/redhat/ubi8-minimal
-          - container: redhat/ubi10:latest # glibc 2.39, git 2.47
-          - container: redhat/ubi10-minimal:latest # glibc 2.39, git 2.47
-          - container: redhat/ubi9:latest # glibc 2.34, git 2.47
-          - container: redhat/ubi9-minimal:latest # glibc 2.34, git 2.47
-          - container: redhat/ubi8:latest # glibc 2.28, git 2.43
-          - container: redhat/ubi8-minimal:latest # glibc 2.28, git 2.43
+          # ubi*-init and ubi*-micro don't have dnf nor microdnf.
+          - container: redhat/ubi10:latest # git 2.47
+          - container: redhat/ubi10-minimal:latest # git 2.47
+          - container: redhat/ubi9:latest # git 2.47
+          - container: redhat/ubi9-minimal:latest # git 2.47
+          - container: redhat/ubi8:latest # git 2.43
+          - container: redhat/ubi8-minimal:latest # git 2.43
+          # https://hub.docker.com/_/centos
+          - container: centos:7 # git 1.8, EoL
+          - container: centos:6 # git 1.7, EoL
+          # - container: centos:5 # git ?, EoL # "M2Crypto.SSL.SSLError: sslv3 alert handshake failure" error with yum
+          # centos:4 image is not available
           # https://hub.docker.com/_/almalinux
-          - container: almalinux:10 # glibc 2.39, git 2.47
-          - container: almalinux:10-minimal # glibc 2.39, git 2.47
-          - container: almalinux:9 # glibc 2.34, git 2.47
-          - container: almalinux:9-minimal # glibc 2.34, git 2.47
-          - container: almalinux:8 # glibc 2.28, git 2.43
-          - container: almalinux:8-minimal # glibc 2.28, git 2.43
+          - container: almalinux:10 # git 2.47
+          - container: almalinux:10-minimal # git 2.47
+          - container: almalinux:9 # git 2.47
+          - container: almalinux:9-minimal # git 2.47
+          - container: almalinux:8 # git 2.43
+          - container: almalinux:8-minimal # git 2.43
           # https://hub.docker.com/r/rockylinux/rockylinux
-          - container: rockylinux/rockylinux:10 # glibc 2.39, git 2.47
-          - container: rockylinux/rockylinux:10-minimal # glibc 2.39, git 2.47
-          - container: rockylinux/rockylinux:9 # glibc 2.34, git 2.47
-          - container: rockylinux/rockylinux:9-minimal # glibc 2.34, git 2.47
-          - container: rockylinux/rockylinux:8 # glibc 2.28, git 2.43
-          - container: rockylinux/rockylinux:8-minimal # glibc 2.28, git 2.43
-          # https://hub.docker.com/_/amazonlinux
-          - container: amazonlinux:2023 # glibc
-          - container: amazonlinux:2 # glibc
-          - container: amazonlinux:1 # glibc
+          - container: rockylinux/rockylinux:10 # git 2.47
+          - container: rockylinux/rockylinux:10-minimal # git 2.47
+          - container: rockylinux/rockylinux:9 # git 2.47
+          - container: rockylinux/rockylinux:9-minimal # git 2.47
+          - container: rockylinux/rockylinux:8 # git 2.43
+          - container: rockylinux/rockylinux:8-minimal # git 2.43
           # https://hub.docker.com/_/oraclelinux
-          - container: oraclelinux:10 # glibc 2.39, git 2.47
-          - container: oraclelinux:10-slim # glibc 2.39, git 2.47
-          - container: oraclelinux:9 # glibc 2.34, git 2.47
-          - container: oraclelinux:9-slim # glibc 2.34, git 2.47
-          - container: oraclelinux:8 # glibc 2.28, git 2.43
-          - container: oraclelinux:8-slim # glibc 2.28, git 2.43
-          - container: oraclelinux:7 # glibc 2.17, git 1.8
-          - container: oraclelinux:7-slim # glibc 2.17, git 1.8
+          - container: oraclelinux:10 # git 2.47
+          - container: oraclelinux:10-slim # git 2.47
+          - container: oraclelinux:9 # git 2.47
+          - container: oraclelinux:9-slim # git 2.47
+          - container: oraclelinux:8 # git 2.43
+          - container: oraclelinux:8-slim # git 2.43
+          - container: oraclelinux:7 # git 1.8, EoL
+          - container: oraclelinux:7-slim # git 1.8, EoL
+          # - container: oraclelinux:6 # git 1.7, EoL # git too old
+          # - container: oraclelinux:6-slim # git 1.7, EoL # git too old
+          # - container: oraclelinux:5 # git ?, EoL # "M2Crypto.SSL.SSLError: tlsv1 alert protocol version" error with yum
+          # oraclelinux:4 image is not available
+          # https://hub.docker.com/_/amazonlinux
+          - container: amazonlinux:2023 # git 2.50
+          - container: amazonlinux:2 # git 2.47
+          - container: amazonlinux:1 # git 2.38, EoL
           # https://hub.docker.com/_/mageia
-          # - container: mageia:cauldron # glibc, dnf fail
-          - container: mageia:9 # glibc
-          # Skip intermediate versions that have reached EoL by default.
+          # https://www.mageia.org/en/support/
+          # Skip old/pre-release versions by default.
+          - container: mageia:latest
+          # - container: mageia:cauldron # glibc # dnf fail
+          # - container: mageia:9 # glibc
           # - container: mageia:8 # glibc, EoL
           # - container: mageia:7 # glibc, EoL
-          - container: mageia:6 # glibc, EoL
-          # - container: mageia:5.1 # glibc 2.20, bash 4.3, no yum
-          # - container: mageia:5 # glibc 2.20, bash 4.3, no yum
+          # - container: mageia:6 # glibc, EoL
+          # - container: mageia:5.1 # glibc 2.20, bash 4.3 # no yum
+          # - container: mageia:5 # glibc 2.20, bash 4.3 # no yum
           # mageia:4 image uses legacy image format.
           # https://hub.docker.com/r/openmandriva/cooker
           # https://hub.docker.com/r/openmandriva/minimal
           - container: openmandriva/cooker:latest # glibc
-          - container: openmandriva/minimal:rock # glibc
           - container: openmandriva/minimal:rolling # glibc
+          - container: openmandriva/minimal:rock # 6.0, glibc
           # https://hub.docker.com/_/alt
-          - container: alt:sisyphus # glibc
-          - container: alt:p11 # glibc
-          - container: alt:p10 # glibc
-          - container: alt:p9 # glibc
-          - container: alt:p8 # glibc
+          # https://en.altlinux.org/ALT
+          # Skip old/pre-release versions by default.
+          - container: alt:latest # glibc
+          # - container: alt:sisyphus # glibc
+          # - container: alt:p11 # glibc
+          # - container: alt:p10 # glibc
+          # - container: alt:p9 # glibc
+          # - container: alt:p8 # glibc, EoL
           # alt:p7 image is not available
           # https://hub.docker.com/_/photon
-          - container: photon:5.0 # glibc
-          - container: photon:4.0 # glibc
-          # Skip intermediate versions that have reached EoL by default.
+          # https://endoflife.date/photon
+          # Skip old/pre-release versions by default.
+          - container: photon:latest # glibc
+          # - container: photon:5.0 # glibc
+          # - container: photon:4.0 # glibc
           # - container: photon:3.0 # glibc, EoL
           # - container: photon:2.0 # glibc, EoL
-          - container: photon:1.0 # glibc, EoL
+          # - container: photon:1.0 # glibc, EoL
           # https://hub.docker.com/r/windriver/wrdistro23
           # https://hub.docker.com/r/windriver/wrlx-image
           - container: windriver/wrdistro23:full # glibc, coreutils
           # - container: windriver/wrdistro23:minimal # glibc, busybox, no /etc/os-release
-          - container: windriver/wrlx-image:lts22-full # glibc, coreutils
-          - container: windriver/wrlx-image:lts22-minimal # glibc, busybox
-          - container: windriver/wrlx-image:lts21-full # glibc, coreutils
-          - container: windriver/wrlx-image:lts21-minimal # glibc, busybox
+          # Skip old/pre-release versions by default.
+          - container: windriver/wrlx-image:latest # glibc, coreutils
+          # - container: windriver/wrlx-image:lts22-full # glibc, coreutils
+          # - container: windriver/wrlx-image:lts22-minimal # glibc, busybox
+          # - container: windriver/wrlx-image:lts21-full # glibc, coreutils
+          # - container: windriver/wrlx-image:lts21-minimal # glibc, busybox
           # - container: windriver/wrlx-image:lts19 # glibc ?, busybox 1.31, no yum
           # https://hub.docker.com/r/openeuler/openeuler
           - container: openeuler/openeuler:latest # glibc
@@ -239,64 +258,64 @@ jobs:
           # https://hub.docker.com/r/opensuse/tumbleweed
           # https://hub.docker.com/r/opensuse/leap
           # https://hub.docker.com/r/opensuse/archive
-          - container: opensuse/tumbleweed:latest # glibc
-          - container: opensuse/leap:16.0 # glibc 2.40, git 2.51
-          - container: opensuse/leap:15.6 # glibc 2.38, git 2.51
+          - container: opensuse/tumbleweed:latest
+          - container: opensuse/leap:16.0 # git 2.51
           # Skip intermediate versions that have reached EoL by default.
-          # - container: opensuse/leap:15.5 # glibc 2.31, git 2.35, EoL
-          # - container: opensuse/leap:15.4 # glibc 2.31, git 2.35, EoL
-          # - container: opensuse/leap:15.3 # glibc 2.31, git 2.35, EoL
-          # - container: opensuse/leap:15.2 # glibc 2.26, git 2.26, EoL
-          # - container: opensuse/leap:15.1 # glibc 2.26, git 2.26, EoL
-          # - container: opensuse/leap:15.0 # glibc 2.26, git 2.16, EoL
-          # - container: opensuse/archive:42.3 # glibc 2.?, git ?, EoL
-          # - container: opensuse/archive:42.2 # glibc 2.?, git ?, EoL
-          # - container: opensuse/archive:42.1 # glibc 2.19, bash 4.2, git ?, EoL, zypper fail
-          - container: opensuse/archive:13.2 # glibc 2.19, bash 4.2, git 2.1, EoL
+          # - container: opensuse/leap:15.6 # git 2.51, EoL
+          # - container: opensuse/leap:15.5 # git 2.35, EoL
+          # - container: opensuse/leap:15.4 # git 2.35, EoL
+          # - container: opensuse/leap:15.3 # git 2.35, EoL
+          # - container: opensuse/leap:15.2 # git 2.26, EoL
+          # - container: opensuse/leap:15.1 # git 2.26, EoL
+          # - container: opensuse/leap:15.0 # git 2.16, EoL
+          # - container: opensuse/archive:42.3 # git ?, EoL
+          # - container: opensuse/archive:42.2 # git ?, EoL
+          # - container: opensuse/archive:42.1 # bash 4.2, git ?, EoL # zypper fail
+          - container: opensuse/archive:13.2 # bash 4.2, git 2.1, EoL
           # opensuse/archive:13.1 image uses legacy image format.
           # --------------------------------------------------------------------
           # apk
           # https://hub.docker.com/_/alpine
           - container: alpine:edge
-          - container: alpine:3.23 # musl 1.2.5, git 2.52
+          - container: alpine:3.23 # git 2.52
           - container: alpine:3.23
             sudo: sudo
           - container: alpine:3.23
             sudo: doas
-          - container: alpine:3.22 # musl 1.2.5, git 2.49
-          - container: alpine:3.21 # musl 1.2.5, git 2.47
+          - container: alpine:3.22 # git 2.49
+          - container: alpine:3.21 # git 2.47
           # Skip intermediate versions that have reached EoL by default.
-          # - container: alpine:3.20 # musl 1.2.5, git 2.45, EoL
-          # - container: alpine:3.19 # musl 1.2.4, git 2.43, EoL
-          # - container: alpine:3.18 # musl 1.2.4, git 2.40, EoL
-          # - container: alpine:3.17 # musl 1.2.3, git 2.39, EoL
-          # - container: alpine:3.16 # musl 1.2.3, git 2.36, EoL
-          # - container: alpine:3.15 # musl 1.2.2, git 2.34, EoL
-          # - container: alpine:3.14 # musl 1.2.2, git 2.32, EoL
-          # - container: alpine:3.13 # musl 1.2.2, git 2.30, EoL
-          # - container: alpine:3.12 # musl 1.1.24, git 2.26, EoL
-          # - container: alpine:3.11 # musl 1.1.24, git 2.24, EoL
-          # - container: alpine:3.10 # musl 1.1.22, git 2.22, EoL
-          # - container: alpine:3.9 # musl 1.1.20, git 2.20, EoL
-          # - container: alpine:3.8 # musl 1.1.19, git 2.18, EoL
-          # - container: alpine:3.7 # musl 1.1.18, git 2.15, EoL, broken env command
-          # - container: alpine:3.6 # musl 1.1.16, git 2.13, EoL, broken env command
-          # - container: alpine:3.5 # musl 1.1.15, git 2.11, EoL
-          # - container: alpine:3.4 # musl 1.1.14, git 2.8, EoL
-          # - container: alpine:3.3 # musl 1.1.12, git 2.8, EoL
-          - container: alpine:3.2 # musl 1.1.11, git 2.4, EoL
-          # - container: alpine:3.1 # musl 1.1.5, git ?, EoL, apk --no-cache not supported
+          # - container: alpine:3.20 # git 2.45, EoL
+          # - container: alpine:3.19 # git 2.43, EoL
+          # - container: alpine:3.18 # git 2.40, EoL
+          # - container: alpine:3.17 # git 2.39, EoL
+          # - container: alpine:3.16 # git 2.36, EoL
+          # - container: alpine:3.15 # git 2.34, EoL
+          # - container: alpine:3.14 # git 2.32, EoL
+          # - container: alpine:3.13 # git 2.30, EoL
+          # - container: alpine:3.12 # git 2.26, EoL
+          # - container: alpine:3.11 # git 2.24, EoL
+          # - container: alpine:3.10 # git 2.22, EoL
+          # - container: alpine:3.9 # git 2.20, EoL
+          # - container: alpine:3.8 # git 2.18, EoL
+          # - container: alpine:3.7 # git 2.15, EoL # broken env command
+          # - container: alpine:3.6 # git 2.13, EoL # broken env command
+          # - container: alpine:3.5 # git 2.11, EoL
+          # - container: alpine:3.4 # git 2.8, EoL
+          # - container: alpine:3.3 # git 2.8, EoL
+          - container: alpine:3.2 # git 2.4, EoL
+          # - container: alpine:3.1 # git ?, EoL, apk --no-cache not supported
           # alpine:3.0 image is not available
           # https://hub.docker.com/r/openwrt/rootfs
-          - container: openwrt/rootfs:x86-64 # musl, apk
-          - container: openwrt/rootfs:x86-64-25.12.3 # musl ?, git ?, apk
-          - container: openwrt/rootfs:x86-64-24.10.6 # musl 1.2.5, git 2.50, opkg
+          - container: openwrt/rootfs:x86-64 # apk
+          - container: openwrt/rootfs:x86-64-25.12.3 # git 2.50, apk
+          - container: openwrt/rootfs:x86-64-24.10.6 # git 2.50, opkg
           # Skip intermediate versions that have reached EoL by default.
-          # - container: openwrt/rootfs:x86-64-23.05.6 # musl 1.2.4, git 2.43, opkg, EoL
-          # - container: openwrt/rootfs:x86-64-22.03.7 # musl ?, git ?, opkg, EoL
-          # - container: openwrt/rootfs:x86-64-21.02.7 # musl ?, git ?, opkg, EoL
-          # - container: openwrt/rootfs:x86-64-19.07.10 # musl ?, git ?, opkg, EoL
-          - container: openwrt/rootfs:x86-64-18.06.9 # musl ?, git ?, opkg, EoL
+          # - container: openwrt/rootfs:x86-64-23.05.6 # git 2.43, opkg, EoL
+          # - container: openwrt/rootfs:x86-64-22.03.7 # git ?, opkg, EoL
+          # - container: openwrt/rootfs:x86-64-21.02.7 # git ?, opkg, EoL
+          # - container: openwrt/rootfs:x86-64-19.07.10 # git ?, opkg, EoL
+          - container: openwrt/rootfs:x86-64-18.06.9 # git 2.20, opkg, EoL
           # openwrt/rootfs:x86-64-17.01.* image is not available
           # https://hub.docker.com/r/chainguard/wolfi-base
           - container: chainguard/wolfi-base:latest
@@ -319,8 +338,8 @@ jobs:
           - container: ghcr.io/void-linux/void-glibc:latest # glibc
           - container: ghcr.io/void-linux/void-musl:latest # musl
           # https://github.com/Vanilla-OS/pico-image
-          - container: ghcr.io/vanilla-os/pico:dev
-          - container: ghcr.io/vanilla-os/pico:main
+          - container: ghcr.io/vanilla-os/pico:dev # glibc
+          - container: ghcr.io/vanilla-os/pico:main # glibc
           # https://hub.docker.com/r/nixos/nix
           - container: nixos/nix:latest
     runs-on: ${{ matrix.os || 'ubuntu-24.04' }}
@@ -459,7 +478,7 @@ jobs:
             debian* | ubuntu* | devuan* | kalilinux* | ghcr.io/vanilla-os/pico:*) retry /usr/bin/apt-get -o Acquire::Retries=10 -qq update && /usr/bin/apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends bsdextrautils ;;
             nixos/nix:*) retry /root/.nix-profile/bin/nix-env -i gawk gnused util-linux ;;
             openmandriva/cooker:*) retry /usr/bin/dnf install -y gawk util-linux ;;
-            windriver/wrlx-image:lts*-minimal) retry /usr/bin/dnf install -y coreutils util-linux-hexdump ;;
+            windriver/wrlx-image:lts*-minimal | windriver/wrlx-image:latest) retry /usr/bin/dnf install -y coreutils util-linux-hexdump ;;
             windriver/*) retry /usr/bin/dnf install -y util-linux-hexdump ;;
             photon:1.0) retry /usr/bin/tdnf install -y gawk sed ;;
             photon:*) retry /usr/bin/tdnf install -y gawk util-linux ;;

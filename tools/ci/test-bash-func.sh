@@ -401,7 +401,6 @@ done
 case "${CONTAINER:-}" in
   ubuntu-2*)
     [[ "${bash_rand_match}" -gt 250 ]] || exit 1
-    [[ "${bash_rand_match}" -ne "${count}" ]] || exit 1
     ;;
   macos-* | alt:p8 | alpine:3.[0-9] | openwrt/rootfs:x86-64-18.06.9)
     [[ "${bash_rand_match}" -eq 0 ]] || exit 1

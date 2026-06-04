@@ -76,7 +76,7 @@ if [ -e /etc/debian_version ]; then
 elif [ -e /etc/redhat-release ] || [ -e /etc/photon-release ] || [ -e /etc/openEuler-release ]; then
   # rhel/centos 6 has no /etc/os-release, but has /etc/redhat-release
   # rhel/centos 7+ and fedora/almalinux/rockylinux/oraclelinux/mageia have /etc/redhat-release and ID_LIKE fedora
-  # amazonlinux has no /etc/redhat-release, but has ID_LIKE fedora
+  # amazonlinux/azurelinux have no /etc/redhat-release, but has ID_LIKE fedora
   # openmandriva has no ID_LIKE fedora, but has /etc/redhat-release and ID openmandriva
   # altlinux (at least p8+) has no ID_LIKE fedora, but has /etc/redhat-release and /etc/altlinux-release and ID altlinux
   # photon (at least 1.0+) has no /etc/redhat-release and ID_LIKE fedora, but has /etc/photon-release and ID photon

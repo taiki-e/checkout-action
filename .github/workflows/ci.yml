@@ -480,7 +480,7 @@ jobs:
             debian/eol* | debian:9-* | debian:10-* | ubuntu:20.* | ubuntu:1[0-9].*)  retry /usr/bin/apt-get -o Acquire::Retries=10 -qq update && retry /usr/bin/apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends bsdmainutils ;;
             ubuntu-slim) retry /usr/bin/sudo /usr/bin/apt-get -o Acquire::Retries=10 -qq update && retry /usr/bin/sudo /usr/bin/apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends bsdextrautils ;;
             debian* | ubuntu* | devuan* | kalilinux* | ghcr.io/vanilla-os/pico:*) retry /usr/bin/apt-get -o Acquire::Retries=10 -qq update && /usr/bin/apt-get -o Acquire::Retries=10 -o Dpkg::Use-Pty=0 install -y --no-install-recommends bsdextrautils ;;
-            nixos/nix:*) retry /root/.nix-profile/bin/nix-env -i gawk gnused util-linux ;;
+            fedora:rawhide) retry /usr/bin/dnf install -y util-linux ;;
             *azurelinux*) retry /usr/bin/dnf install -y gawk ;;
             openmandriva/cooker:*) retry /usr/bin/dnf install -y gawk util-linux ;;
             windriver/wrlx-image:lts*-minimal | windriver/wrlx-image:latest) retry /usr/bin/dnf install -y coreutils util-linux-hexdump ;;
@@ -490,6 +490,7 @@ jobs:
             openwrt/rootfs:x86-64-1[0-9].* | openwrt/rootfs:x86-64-2[0-4].*) retry /bin/opkg install coreutils-od ;;
             openwrt*) retry /usr/bin/apk --no-cache add coreutils-od ;;
             ghcr.io/void-linux/void-*) retry /usr/bin/xbps-install -Sy util-linux ;;
+            nixos/nix:*) retry /root/.nix-profile/bin/nix-env -i gawk gnused util-linux ;;
           esac
         env:
           CONTAINER: ${{ matrix.container || matrix.os }}

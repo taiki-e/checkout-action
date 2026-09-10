@@ -77,7 +77,7 @@ jobs:
           - container: debian:13-slim
             sudo: doas
           - container: debian:12-slim # git 2.39
-          - container: debian:11-slim # git 2.30, EoL
+          # - container: debian:11-slim # git 2.30, EoL, end of LTS
           - container: debian:10-slim # git 2.20, EoL, end of LTS
           - container: debian:9-slim # git 2.11, EoL, end of LTS
           - container: debian/eol:jessie-slim # 8, git 2.1, EoL, end of LTS, end of ELTS
@@ -376,7 +376,7 @@ jobs:
           sed -i /etc/apt/sources.list -e 's/deb.debian.org/archive.debian.org/g' \
             -e 's|security.debian.org|archive.debian.org/|g' \
             -e "/${codename}-updates/d"
-        if: startsWith(matrix.container, 'debian:9') || startsWith(matrix.container, 'debian:10')
+        if: startsWith(matrix.container, 'debian:9') || startsWith(matrix.container, 'debian:10') || startsWith(matrix.container, 'debian:11')
       - name: Install requirements (CentOS)
         run: |
           retry() {

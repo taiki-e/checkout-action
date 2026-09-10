@@ -12,11 +12,9 @@ bsdextrautils
 bsdmainutils
 Cachy
 cachyos
-CDPATH
 chainguard
 clangarm
 cmdline
-coreutils
 cygdrive
 devuan
 doas

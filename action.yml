@@ -5,6 +5,10 @@ inputs:
   token:
     description: GitHub token for checking out a repository.
     required: false
+  fetch-tags:
+    description: Whether to fetch git tags.
+    required: false
+    default: false
 
 # Note:
 # - inputs.* should be manually mapped to INPUT_* due to https://github.com/actions/runner/issues/665
@@ -111,6 +115,7 @@ runs:
       env:
         # NB: Sync with Windows step.
         INPUT_TOKEN: ${{ inputs.token }}
+        INPUT_FETCH_TAGS: ${{ inputs.fetch-tags }}
         # TODO: support in input options
         INPUT_REPOSITORY: ${{ github.repository }}
         INPUT_SERVER_URL: ${{ github.server_url }}
@@ -204,6 +209,7 @@ runs:
       env:
         # NB: Sync with non-Windows step.
         INPUT_TOKEN: ${{ inputs.token }}
+        INPUT_FETCH_TAGS: ${{ inputs.fetch-tags }}
         # TODO: support in input options
         INPUT_REPOSITORY: ${{ github.repository }}
         INPUT_SERVER_URL: ${{ github.server_url }}

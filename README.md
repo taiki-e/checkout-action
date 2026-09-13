@@ -53,6 +53,7 @@ Almost equivalent to:
 | Name | Required | Description | Type | Default |
 | ---- | :------: | ----------- | ---- | ------- |
 | token | | GitHub token for checking out a repository. | String | |
+| fetch-tags | | Whether to fetch tags from the remote. | Boolean | false |
 
 ## Why not actions/checkout?
 

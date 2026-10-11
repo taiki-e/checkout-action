@@ -278,7 +278,12 @@ else
   "${git}" "${common_args[@]}" config --local "http.${repository_url}.proxy" ''
   "${git}" "${common_args[@]}" config --local "https.${repository_url}.proxy" ''
 fi
-fetch_args+=(fetch --no-tags --prune --no-recurse-submodules --depth=1)
+fetch_args+=(fetch --prune --no-recurse-submodules --depth=1)
+case "${INPUT_FETCH_TAGS}" in
+  true) fetch_args+=(--tags) ;;
+  false | "") fetch_args+=(--no-tags) ;;
+  *) bail "Invalid value for 'input.fetch-tags' (expected 'true' or 'false')" ;;
+esac
 fetch_refs=()
 checkout_args=(checkout --force)
 if [[ "${INPUT_REF}" == "refs/heads/"* ]]; then
